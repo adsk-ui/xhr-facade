@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mocha Spec Runner</title>
+    <link rel="stylesheet" href="bower_components/mocha/mocha.css">
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="bower_components/mocha/mocha.js"></script>
+    <script>mocha.setup('bdd')</script>
+    <script src="bower_components/chai/chai.js"></script>
+    <script src="bower_components/chai-as-promised/lib/chai-as-promised.js"></script>
+    <script>
+        var assert = chai.assert;
+        var expect = chai.expect;
+        var should = chai.should();
+    </script>
+    <!-- bower:js -->
+    <script src="../bower_components/jquery/jquery.js"></script>
+    <script src="../bower_components/sinon/pkg/sinon.js"></script>
+    <script src="../bower_components/rsvp/rsvp.js"></script>
+    <!-- endbower -->
+
+    <script src="../src/xhrfacade.js"></script>
+
+    <script src="spec/xhrfacade.spec.js"></script>
+
+
+    <script>mocha.run()</script>
+</body>
+</html>

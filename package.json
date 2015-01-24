@@ -1,0 +1,19 @@
+{
+  "name": "xhrfacade",
+  "version": "0.0.0",
+  "description": "Frontend utility for abstracting server-side endpoints",
+  "main": "n/a",
+  "scripts": {
+    "test": "n/a"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "blockref": "git://github.com/adsk-ui/blockref.git#v0.0.0",
+    "gulp": "^3.8.10",
+    "gulp-rename": "^1.2.0",
+    "slash": "^1.0.0",
+    "wiredep": "^2.2.2",
+    "wireto": "git://github.com/adsk-ui/wireto.git#v0.0.0"
+  }
+}
