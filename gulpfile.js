@@ -2,7 +2,8 @@ var gulp = require('gulp'),
 	wireto = require('wireto'),
 	rename = require('gulp-rename'),
 	slash = require('slash'),
-	wiredep = require('wiredep');
+	wiredep = require('wiredep'),
+	connect = require('gulp-connect');
 
 gulp.task('test', function(){
 	return gulp.src('test/index.template.html')
@@ -14,8 +15,16 @@ gulp.task('test', function(){
 			return '<script src="'+slash('spec/'+filepath)+'"></script>';
 		}))
 		.pipe(rename('index.html'))
-		.pipe(gulp.dest('test'));
+		.pipe(gulp.dest('test'))
+		.pipe(connect.reload());
+});
+gulp.task('connect', function(){
+	connect.server({
+		root: '.',
+		livereload: true
+	});
 });
 gulp.task('watch', function(){
 	gulp.watch(['src/*.js', 'test/spec/*.js'], ['test']);
 });
+gulp.task('default', ['connect', 'watch']);

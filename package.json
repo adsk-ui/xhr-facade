@@ -11,6 +11,7 @@
   "devDependencies": {
     "blockref": "git://github.com/adsk-ui/blockref.git#v0.0.0",
     "gulp": "^3.8.10",
+    "gulp-connect": "^2.2.0",
     "gulp-rename": "^1.2.0",
     "slash": "^1.0.0",
     "wiredep": "^2.2.2",

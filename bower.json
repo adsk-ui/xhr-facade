@@ -19,8 +19,8 @@
     "tests"
   ],
   "dependencies": {
-    "sinon": "https://github.com/adsk-ui/sinon.git#adsk_v1.12.3",
-    "rsvp": "~3.0.16",
+    "sinon": "https://github.com/adsk-ui/sinon.git#adsk_v1.12.4",
+    "rsvp": "3.0.13",
     "jquery": "1.9.0"
   },
   "overrides": {

@@ -7,6 +7,10 @@
             return typeof obj === 'string';
         }
 
+        function isRegExp(obj) {
+            return obj instanceof RegExp;
+        }
+
         function extend(obj) {
             var sources = slice.call(arguments, 1),
                 sourcesLength = sources.length,
@@ -32,10 +36,19 @@
             return endpoint && endpoint.cache || null;
         }
 
-        function setEndpoint(endpoints, name, options, cache) {
-            var endpoint = name && endpoints[name] || {};
+        function setEndpointOptions(endpoints, name, options) {
+            var endpoint;
+            if (!name) return;
+            endpoint = name && endpoints[name] || {};
             if (options)
                 endpoint.options = options;
+            endpoints[name] = endpoint;
+        }
+
+        function setEndpointCache(endpoints, name, cache) {
+            var endpoint;
+            if (!name) return;
+            endpoint = name && endpoints[name] || {};
             if (cache)
                 endpoint.cache = cache;
             endpoints[name] = endpoint;
@@ -51,65 +64,58 @@
             return sameType && sameUrl && sameData;
         }
 
-        function XhrFacade() {
-        	var endpoints = this.endpoints = {},
-        		server = sinon.fakeServer.create();
-
-        	server.autoRespond = true;
-        	server.xhr.useFilters = true;
-        	server.xhr.defaultHeaders = {'Content-Type': 'application/json'};
+        function XhrFacade(options) {
+            var self = this;
+            var endpoints = this.endpoints = {};
+            var server = sinon.fakeServer.create();
+            options = options || {};
+            server.autoRespond = true;
+            server.xhr.useFilters = true;
+            server.xhr.defaultHeaders = options.defaultHeaders || {
+                'Content-Type': 'application/json'
+            };
             /**
-             * Add a filter to allow requests to real REST endpoints
+             * Add filter to allow requests to real REST endpoints
              * to pass through sinon untouched.
              */
-            server.xhr.addFilter(function( method, requestedUrl ){
-                var intercept = false,
-                	endpointsLength = endpoints.length,
-                	endpoint;
-
-                for(var i = 0; i < endpointsLength; i++){
-                	endpoint = endpoints[i];
-                	if( endpoint.options.url.toString() === requestedUrl.toString() ){
-                		// intercept = true;
-                		// break;
-                	}else if( isRegExp(endpoint.options.url) && isString(requestedUrl) ){
-                		// intercept = endpoint.options.url.exec(requestedUrl);
-                		// break;
-                	}
-                	// intercept = endpoint.options.url === /[^?]+/.exec(requestedUrl);
-                	// break;
-                }
-                return !intercept;
-                // return !_(virtualServices).any(function(service){
-                //     serviceUrl = service.options.url;
-                //     if( serviceUrl.toString() === requestedUrl.toString() ){
-                //         return true;
-                //     }else if( _.isRegExp(serviceUrl) && _.isString(requestedUrl) ){
-                //         return serviceUrl.exec(requestedUrl);
-                //     }
-                //     return serviceUrl === /[^?]+/.exec(requestedUrl);
-                // });
-            });
-
+            var filter = function() {
+                return (function(method, requestedUrl) {
+                    var intercept = false,
+                        endpoints = this.endpoints,
+                        endpoint;
+                    for (var name in endpoints) {
+                        endpoint = endpoints[name];
+                        if (!endpoint.options.response)
+                            continue;
+                        if (endpoint.options.url.toString() === requestedUrl.toString()) {
+                            intercept = true;
+                        } else if (isRegExp(endpoint.options.url) && isString(requestedUrl)) {
+                            intercept = endpoint.options.url.exec(requestedUrl);
+                        }else{
+                            intercept = endpoint.options.url === /[^?]+/.exec(requestedUrl);
+                        }
+                        if (intercept)
+                            break;
+                    }
+                    return !intercept;
+                }).apply(self, arguments);
+            };
+            server.xhr.addFilter(filter);
             this.server = server;
-            this.endpoints = {};
         }
 
-        XhrFacade.prototype.add = function() {
-        // 	function( options, callback ){
-        //     var virtualServices = this.virtualServices,
-        //         name = options.name;
-        //     if( !_.isString(name) || !name )
-        //         throw new Error('Cannot create virtual service without name');
-        //     if( !virtualServices[name] ){
-        //         delete options.name;
-        //         virtualServices[name] = {
-        //             'options': options
-        //         };
-        //         server.respondWith(options.type || 'GET', options.url, callback);
-        //     }
-        // }
+        XhrFacade.prototype.add = function(options) {
+            var endpoints = this.endpoints;
+            options = options || {};
+            if (!options.name || !isString(options.name))
+                throw new Error('Cannot create endpoint without name');
+            if (!options.url || (!isString(options.url) && !isRegExp(options.url)))
+                throw new Error('Cannot create endpoint without url');
+            setEndpointOptions(endpoints, options.name, options);
+            if(options.response)
+                this.server.respondWith(options.type || 'GET', options.url, options.response);
         };
+
         XhrFacade.prototype.get = function() {
             var deferreds = [],
                 deferred,
@@ -128,13 +134,15 @@
                 options = getEndpointOptions(this.endpoints, request.name);
                 options = extend({}, options, request);
 
-                cache = getEndpointCache(this.endpoints, request.name);
+                cache = getEndpointCache(this.endpoints, options.name);
 
                 if (cache && useCache(options, request)) {
                     deferred = cache;
                 } else if (options.url) {
+                    setEndpointOptions(this.endpoints, options.name, options);
                     deferred = $.ajax(options);
-                    setEndpoint(this.endpoints, request.name, options, deferred);
+                    setEndpointCache(this.endpoints, options.name, deferred);
+
                 } else {
                     deferred = null;
                 }
@@ -142,14 +150,15 @@
             }
 
             return new RSVP.Promise(function(resolve, reject) {
-                $.when.apply($, deferreds)
-                    .done(function() {
-                        resolve.apply(this, arguments);
-                    }, function() {
-                        reject.apply(this, arguments);
-                    });
+                $.when.apply($, deferreds).then(resolve, reject);
             });
         };
+
+        XhrFacade.prototype.restore = function() {
+            this.server.restore();
+            this.server.xhr.filters = [];
+        };
+
         return XhrFacade;
     }
     if (typeof define === 'function' && define.amd) {
