@@ -10,6 +10,15 @@
         beforeEach(function() {
             sinon.spy(jQuery, 'ajax');
             facade = new XhrFacade();
+            facade.add({
+                'name': 'virtual-service',
+                'url': '/virtual-service',
+                'response': function(request){
+                    request.respond(JSON.stringify({
+                        message: "I'm a virtual response!"
+                    }));
+                }
+            });
         });
 
         afterEach(function() {
@@ -107,6 +116,15 @@
                         }
                     }, function() {
                         expect('not to error').to.be.false;
+                        done();
+                    });
+            });
+            it('should pass extra parameters into resolve/reject callbacks', function(){
+                facade.get('virtual-service', 'extra', 'params')
+                    .then(function(response, extra, params){
+                        expect(response.message).to.equal("I'm a virtual response!");
+                        expect(extra).to.equal('extra');
+                        expect(params).to.equal('params');
                         done();
                     });
             });
