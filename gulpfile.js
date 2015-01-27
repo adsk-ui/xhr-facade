@@ -18,6 +18,10 @@ gulp.task('test', function(){
 		.pipe(gulp.dest('test'))
 		.pipe(connect.reload());
 });
+gulp.task('build', function(){
+	return gulp.src('src/*.js')
+		.pipe(gulp.dest('dist'));
+});
 gulp.task('connect', function(){
 	connect.server({
 		root: '.',
