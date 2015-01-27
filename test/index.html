@@ -21,13 +21,7 @@
     <script src="../bower_components/sinon/pkg/sinon.js"></script>
     <script src="../bower_components/rsvp/rsvp.js"></script>
     <!-- endbower -->
-    <script>
-    RSVP.Promise.prototype.spread = function (onFulfillment, onRejection, label) {
-        return this.then(function (array) {
-            return onFulfillment.apply(void 0, array);
-        }, onRejection, label);
-    };
-    </script>
+
     <script src="../src/xhrfacade.js"></script>
 
     <script src="spec/xhrfacade.spec.js"></script>

@@ -19,13 +19,7 @@
     <!-- bower:js -->
 
     <!-- endbower -->
-    <script>
-    RSVP.Promise.prototype.spread = function (onFulfillment, onRejection, label) {
-        return this.then(function (array) {
-            return onFulfillment.apply(void 0, array);
-        }, onRejection, label);
-    };
-    </script>
+
     <!-- include source files here... -->
 
     <!-- include spec files here... -->

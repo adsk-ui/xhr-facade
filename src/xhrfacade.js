@@ -1,6 +1,13 @@
 (function() {
 
     function factory($, RSVP, sinon) {
+
+        RSVP.Promise.prototype.spread = function (onFulfillment, onRejection, label) {
+            return this.then(function (array) {
+                return onFulfillment.apply(void 0, array);
+            }, onRejection, label);
+        };
+
         var slice = Array.prototype.slice;
 
         function isString(obj) {
