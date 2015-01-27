@@ -118,19 +118,27 @@
         XhrFacade.ENDPOINT_NAME_REQUIRED = 'You must provide a name when adding an endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when adding an endpoint.';
 
-        XhrFacade.prototype.add = function(options) {
-            var endpoints = this.endpoints;
-            options = options || {};
-            if (!options.name || !isString(options.name))
-                throw new Error(XhrFacade.ENDPOINT_NAME_REQUIRED);
-            if (!options.url || (!isString(options.url) && !isRegExp(options.url)))
-                throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
+        XhrFacade.prototype.add = function(config) {
+            var configLength,
+                options;
 
-            options.type = options.type || 'GET';
-            setEndpointOptions(endpoints, options.name, options.type, options);
+            config = isArray(config) ? config : config ? [config] : [];
+            configLength = config.length;
 
-            if(options.response)
-                this.server.respondWith(options.type, options.url, options.response);
+            for(var i = 0; i < configLength; i++){
+                options = config[i];
+                options.type = options.type || 'GET';
+
+                if (!options.name || !isString(options.name))
+                    throw new Error(XhrFacade.ENDPOINT_NAME_REQUIRED);
+                if (!options.url || (!isString(options.url) && !isRegExp(options.url)))
+                    throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
+
+                setEndpointOptions(this.endpoints, options.name, options.type, options);
+
+                if(options.response)
+                    this.server.respondWith(options.type, options.url, options.response);
+            }
         };
 
         XhrFacade.prototype.get = function() {

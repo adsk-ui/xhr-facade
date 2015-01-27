@@ -70,7 +70,36 @@
                     expect(err.message).to.equal(XhrFacade.ENDPOINT_URL_REQUIRED);
                 }
             });
-
+            it('should allow an array as input', function(done){
+                facade.add([{
+                    'name': 'blue',
+                    'url': '/blue',
+                    'response': function(request){
+                        request.respond(JSON.stringify({
+                            message: 'blue!'
+                        }));
+                    }
+                }]);
+                facade.get(['blue']).spread(function(blue){
+                    expect(blue.message).to.equal('blue!');
+                    done();
+                });
+            });
+            it('should allow an object as input', function(done){
+                facade.add({
+                    'name': 'blue',
+                    'url': '/blue',
+                    'response': function(request){
+                        request.respond(JSON.stringify({
+                            message: 'blue!'
+                        }));
+                    }
+                });
+                facade.get(['blue']).spread(function(blue){
+                    expect(blue.message).to.equal('blue!');
+                    done();
+                });
+            });
             it('should allow real endpoints to be called by name', function(done){
                 facade.get(['hola'])
                     .then(function(responses){
