@@ -11,11 +11,6 @@
             sinon.spy(jQuery, 'ajax');
             facade = new XhrFacade();
             facade.add({
-                'name': 'hola',
-                'url': '/test/data/hola.json'
-            });
-            facade.add({
-                'name': 'bonjour',
                 'url': '/bonjour',
                 'response': function(request, id){
                     request.respond(JSON.stringify({
@@ -24,11 +19,11 @@
                 }
             });
             facade.add({
-                'name': 'custom',
                 'url': /\/custom\/(.+)/,
                 'response': function(request, greeting){
                     request.respond(JSON.stringify({
                         message: greeting
+                        // body: facade.utils.urlParam(request.url, 'food')
                     }));
                 }
             });
@@ -49,17 +44,6 @@
                 expect(facade.add).to.be.a('function');
             });
 
-            it('should throw error if name is not provided for endpoint', function(){
-                var err = {};
-                try{
-                    facade.add({});
-                }catch(e){
-                    err = e;
-                }finally{
-                    expect(err.message).to.equal(XhrFacade.ENDPOINT_NAME_REQUIRED);
-                }
-            });
-
             it('should throw error if url is not provided for endpoint', function(){
                 var err = {};
                 try{
@@ -72,7 +56,6 @@
             });
             it('should allow an array as input', function(done){
                 facade.add([{
-                    'name': 'blue',
                     'url': '/blue',
                     'response': function(request){
                         request.respond(JSON.stringify({
@@ -80,14 +63,13 @@
                         }));
                     }
                 }]);
-                facade.get(['blue']).spread(function(blue){
+                facade.get([{url:'/blue'}]).spread(function(blue){
                     expect(blue.message).to.equal('blue!');
                     done();
                 });
             });
             it('should allow an object as input', function(done){
                 facade.add({
-                    'name': 'blue',
                     'url': '/blue',
                     'response': function(request){
                         request.respond(JSON.stringify({
@@ -95,32 +77,14 @@
                         }));
                     }
                 });
-                facade.get(['blue']).spread(function(blue){
+                facade.get([{url:'/blue'}]).spread(function(blue){
                     expect(blue.message).to.equal('blue!');
-                    done();
-                });
-            });
-            it('should allow real endpoints to be called by name', function(done){
-                facade.get(['hola'])
-                    .then(function(responses){
-                        expect(responses[0].message).to.equal('hola!');
-                        done();
-                    });
-            });
-
-            it('should allow virtual endpoints to be called by name', function(done){
-                facade.get([{
-                    'name': 'bonjour'
-                }])
-                .then(function(responses){
-                    expect(responses[0].message).to.equal('bonjour!');
                     done();
                 });
             });
 
             it('should allow urls to be specified as regular expressions with capture groups', function(done){
                 facade.get([{
-                    'name': 'custom',
                     'url': '/custom/aloha!'
                 }])
                 .then(function(responses){
@@ -131,7 +95,6 @@
 
             it('should register seperate default options for each endpoint HTTP method', function(done){
                 facade.add({
-                    'name': 'method-man',
                     'url': '/method-man',
                     'type': 'GET',
                     'response': function(request){
@@ -141,7 +104,6 @@
                     }
                 });
                 facade.add({
-                    'name': 'method-man',
                     'url': '/method-man',
                     'type': 'POST',
                     'response': function(request){
@@ -151,10 +113,10 @@
                     }
                 });
                 facade.get([{
-                    'name': 'method-man',
+                    'url': '/method-man',
                     'type': 'GET'
                 }, {
-                    'name': 'method-man',
+                    'url': '/method-man',
                     'type': 'POST'
                 }]).spread(function(get, post){
                     expect(get.message).to.equal('you got it');
@@ -180,35 +142,30 @@
                 }
             });
 
-            it('should throw an error when omitting the URL while requesting an endpoint defined as a regular expresion', function(done){
-                var err = {};
-                try{
-                    facade.get(['custom']);
-                }catch(e){
-                    err = e;
-                }finally{
-                    expect(err.message).to.equal(XhrFacade.REGEXP_ENDPOINT_URL_REQUIRED);
-                    done();
-                }
-            });
-
             it('should return a promise', function() {
                 expect(facade.get([]) instanceof RSVP.Promise).to.be.true;
             });
 
             it('should allow calls to regular endpoints to pass through', function(done) {
+                var message;
                 facade
                     .get([{
                         'url': '/test/data/hello.json'
                     }])
                     .then(function(responses) {
-                        expect(responses[0].message).to.equal('hello!');
+                        message = responses[0].message;
+                    })
+                    .finally(function(){
+                        expect(message).to.equal('hello!');
                         done();
                     });
             });
 
             it('should return cached responses for duplicate requests', function(done) {
-                RSVP.all([facade.get(['hola']), facade.get(['hola'])])
+                var options = {
+                    'url': '/test/data/hola.json'
+                };
+                RSVP.all([facade.get([options]), facade.get([options])])
                     .spread(function(first, second) {
                         try {
                             expect(first[0].message).to.equal('hola!');
@@ -227,10 +184,8 @@
 
             it('should not return cached responses for calls to same endpoint when URL fragments differ', function(done){
                 RSVP.all([facade.get([{
-                    'name': 'custom',
                     'url': '/custom/one'
                 }]), facade.get([{
-                    'name': 'custom',
                     'url': '/custom/two'
                 }])]).spread(function(first, second){
                     expect(first[0].message).to.equal('one');
@@ -240,8 +195,26 @@
                 });
             });
 
+            it('should not return cache responses for calls to same endpoint with different request payloads', function(){
+                facade.get([{
+                    url: '/custom/wine',
+                    data: {
+                        food: "cheese"
+                    }
+                }, {
+                    url: '/custom/beer',
+                    data: {
+                        food: "pretzels"
+                    }
+                }]).spread(function(first, second){
+
+                });
+            });
+
             it('should pass extra parameters into resolve/reject callbacks', function(done){
-                facade.get(['bonjour'], 'extra', 'params')
+                facade.get([{
+                    'url': '/bonjour'
+                }], 'extra', 'params')
                     .spread(function(french, extra, params){
                         expect(french.message).to.equal("bonjour!");
                         expect(extra).to.equal('extra');
@@ -251,13 +224,14 @@
             });
 
             it('calls can be chained', function(done){
-                facade.get(['hola'])
+                facade.get([{
+                    url: '/test/data/hola.json'
+                }])
                     .spread(function(spanish){
-                        return facade.get(['bonjour'], spanish);
+                        return facade.get([{url: '/bonjour'}], spanish);
                     })
                     .spread(function(french, spanish){
                         return facade.get([{
-                            'name': 'custom',
                             'url': '/custom/' + spanish.message + ' and ' + french.message
                         }]);
                     })
