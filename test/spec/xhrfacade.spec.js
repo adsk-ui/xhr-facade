@@ -19,11 +19,11 @@
                 }
             });
             facade.add({
-                'url': /\/custom\/(.+)/,
-                'response': function(request, greeting){
+                'url': /\/custom\/([^\?]+)/,
+                'response': function(request, message){
                     request.respond(JSON.stringify({
-                        message: greeting
-                        // body: facade.utils.urlParam(request.url, 'food')
+                        message: message,
+                        param: request.getUrlParam('param')
                     }));
                 }
             });
@@ -195,19 +195,23 @@
                 });
             });
 
-            it('should not return cache responses for calls to same endpoint with different request payloads', function(){
+            it('should not return cache responses for calls to same endpoint with different request payloads', function(done){
                 facade.get([{
                     url: '/custom/wine',
                     data: {
-                        food: "cheese"
+                        param: "cheese"
                     }
                 }, {
                     url: '/custom/beer',
                     data: {
-                        food: "pretzels"
+                        param: "pretzels"
                     }
                 }]).spread(function(first, second){
-
+                    expect(first.message).to.equal('wine');
+                    expect(first.param).to.equal('cheese');
+                    expect(second.message).to.equal('beer');
+                    expect(second.param).to.equal('pretzels');
+                    done();
                 });
             });
 

@@ -189,21 +189,6 @@
             this.server.xhr.filters = [];
         };
 
-        // XhrFacade.utils = {
-        //     urlParam: function(url, name) {
-        //         var params = url.substring(url.indexOf('?') + 1),
-        //             paramsLength;
-        //         params = params.split('&');
-        //         paramsLength = params.length;
-        //         for (var i = 0, pair; i < paramsLength; i++) {
-        //             pair = params[i].split('=');
-        //             if (pair[0] === name) {
-        //                 return pair[1];
-        //             }
-        //         }
-        //     }
-        // };
-
         return XhrFacade;
     }
     if (typeof define === 'function' && define.amd) {
