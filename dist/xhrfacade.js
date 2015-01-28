@@ -1,18 +1,29 @@
 (function() {
 
     function factory($, RSVP, sinon) {
+
+        RSVP.Promise.prototype.spread = function(onFulfillment, onRejection, label) {
+            return this.then(function(array) {
+                return onFulfillment.apply(void 0, array);
+            }, onRejection, label);
+        };
+
         var slice = Array.prototype.slice;
 
         function isString(obj) {
             return typeof obj === 'string';
         }
 
-        function isArray(obj){
+        function isArray(obj) {
             return obj instanceof Array;
         }
 
         function isRegExp(obj) {
             return obj instanceof RegExp;
+        }
+
+        function isBoolean(obj) {
+            return typeof obj === 'boolean';
         }
 
         function extend(obj) {
@@ -30,47 +41,32 @@
             return obj;
         }
 
-        function getEndpointOptions(endpoints, name, type) {
-            var endpoint;
-            type = type || 'GET';
-            endpoint = name && endpoints[name + type];
+        function getEndpointOptions(endpoints, id) {
+            var endpoint = endpoints[id];
             return endpoint && endpoint.options || {};
         }
 
-        function getEndpointCache(endpoints, name, type) {
-            var endpoint;
-            type = type || 'GET';
-            endpoint = name && endpoints[name + type];
-            return endpoint && endpoint.cache || null;
-        }
-
-        function setEndpointOptions(endpoints, name, type, options) {
-            var endpoint, id;
-            if (!name || !type) return;
-            id = name + type;
-            endpoint = endpoints[id] || {};
+        function setEndpointOptions(endpoints, id, options) {
+            var endpoint = endpoints[id] || {};
             endpoint.options = options;
             endpoints[id] = endpoint;
         }
 
-        function setEndpointCache(endpoints, name, type, cache) {
-            var endpoint, id;
-            if (!name || !type) return;
-            id = name + type;
-            endpoint = name && endpoints[id] || {};
-            if (endpoint && cache)
-                endpoint.cache = cache;
-            endpoints[id] = endpoint;
+        function getEndpointCache(endpoints, id, options) {
+            var endpoint = endpoints[id] || {},
+                endpointOptions = endpoint.options || {},
+                endpointCache = endpoint.cache,
+                match;
+            if (!endpointCache)
+                return null;
+            match = endpointOptions.data === options.data;
+            return match ? endpointCache : null;
         }
 
-        function useCache(options1, options2) {
-            var sameType = options1.type === options2.type,
-                sameUrl = options1.url === options2.url,
-                sameData;
-            options1.data = options1.data || '';
-            options2.data = options2.data || '';
-            sameData = options1.data.toString() === options2.data.toString();
-            return sameType && sameUrl && sameData;
+        function setEndpointCache(endpoints, id, cache) {
+            var endpoint = endpoints[id] || {};
+            endpoint.cache = cache;
+            endpoints[id] = endpoint;
         }
 
         function XhrFacade(options) {
@@ -100,7 +96,7 @@
                             intercept = true;
                         } else if (isRegExp(endpoint.options.url) && isString(requestedUrl)) {
                             intercept = endpoint.options.url.exec(requestedUrl);
-                        }else{
+                        } else {
                             intercept = endpoint.options.url === /[^?]+/.exec(requestedUrl);
                         }
                         if (intercept)
@@ -114,8 +110,8 @@
         }
 
         XhrFacade.REQUEST_ARRAY_REQUIRED = 'You must pass a request array to XhrFacade.get() method.';
-        XhrFacade.REGEXP_ENDPOINT_URL_REQUIRED = 'Requests to endpoints registered as regular expresions must provide a URLs.';
-        XhrFacade.ENDPOINT_NAME_REQUIRED = 'You must provide a name when adding an endpoint.';
+        XhrFacade.URL_REQUIRED = 'You must provide a URL when getting an endpoint.';
+        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response value when adding a virtual endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when adding an endpoint.';
 
         XhrFacade.prototype.add = function(config) {
@@ -125,19 +121,21 @@
             config = isArray(config) ? config : config ? [config] : [];
             configLength = config.length;
 
-            for(var i = 0; i < configLength; i++){
+            for (var i = 0; i < configLength; i++) {
                 options = config[i];
-                options.type = options.type || 'GET';
 
-                if (!options.name || !isString(options.name))
-                    throw new Error(XhrFacade.ENDPOINT_NAME_REQUIRED);
                 if (!options.url || (!isString(options.url) && !isRegExp(options.url)))
                     throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
 
-                setEndpointOptions(this.endpoints, options.name, options.type, options);
+                if (!options.response)
+                    throw new Error(XhrFacade.RESPONSE_REQUIRED);
 
-                if(options.response)
-                    this.server.respondWith(options.type, options.url, options.response);
+                options.type = options.type || 'GET';
+                options.id = options.url + '+' + options.type;
+
+                setEndpointOptions(this.endpoints, options.id, options);
+
+                this.server.respondWith(options.type, options.url, options.response);
             }
         };
 
@@ -147,38 +145,37 @@
                 requests,
                 requestsLength,
                 request,
-                defaults,
-                options,
                 cache;
 
-            if(!arguments.length || !isArray(arguments[0]))
+            if (!arguments.length || !isArray(arguments[0]))
                 throw new Error(XhrFacade.REQUEST_ARRAY_REQUIRED);
 
             requests = arguments.length ? arguments[0] : [];
             requestsLength = requests.length;
 
             for (var i = 0; i < requestsLength; i++) {
-                request = isString(requests[i]) ? {
-                    name: requests[i]
-                } : requests[i];
+                request = requests[i];
 
-                defaults = getEndpointOptions(this.endpoints, request.name, request.type);
-                options = extend({}, defaults, request);
+                if (request.url) {
+                    request.type = request.type || 'GET';
+                    request.id = request.url + '+' + request.type;
+                    request.cache = isBoolean(request.cache) ? request.cache : true;
 
-                if(isRegExp(options.url))
-                    throw new Error(XhrFacade.REGEXP_ENDPOINT_URL_REQUIRED);
+                    cache = getEndpointCache(this.endpoints, request.id, request);
 
-                cache = getEndpointCache(this.endpoints, options.name, options.type);
-
-                if (cache && useCache(defaults, options)) {
-                    deferred = cache;
-                } else if (options.url) {
-                    deferred = $.ajax(options);
-                    setEndpointCache(this.endpoints, options.name, options.type, deferred);
-
+                    if (cache) {
+                        deferred = cache;
+                    } else {
+                        deferred = $.ajax(request);
+                        if (request.cache) {
+                            setEndpointCache(this.endpoints, request.id, deferred);
+                            setEndpointOptions(this.endpoints, request.id, request);
+                        }
+                    }
                 } else {
-                    deferred = requests[i];
+                    deferred = request;
                 }
+
                 deferreds.push(deferred);
             }
 
