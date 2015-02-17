@@ -114,7 +114,7 @@
         XhrFacade.RESPONSE_REQUIRED = 'You must provide a response value when adding a virtual endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when adding an endpoint.';
 
-        XhrFacade.prototype.add = function(config) {
+        XhrFacade.prototype.create = function(config) {
             var configLength,
                 options;
 
@@ -139,7 +139,7 @@
             }
         };
 
-        XhrFacade.prototype.get = function() {
+        XhrFacade.prototype.ajax = function() {
             var deferreds = [],
                 deferred,
                 requests,
@@ -184,7 +184,7 @@
             return RSVP.all(deferreds);
         };
 
-        XhrFacade.prototype.restore = function() {
+        XhrFacade.prototype.destroy = function() {
             this.server.restore();
             this.server.xhr.filters = [];
         };
