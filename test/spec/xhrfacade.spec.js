@@ -10,7 +10,7 @@
         beforeEach(function() {
             sinon.spy(jQuery, 'ajax');
             facade = new XhrFacade();
-            facade.add({
+            facade.create({
                 'url': '/bonjour',
                 'response': function(request, id){
                     request.respond(JSON.stringify({
@@ -18,7 +18,7 @@
                     }));
                 }
             });
-            facade.add({
+            facade.create({
                 'url': /\/custom\/([^\?]+)/,
                 'response': function(request, message){
                     request.respond(JSON.stringify({
@@ -31,23 +31,27 @@
 
         afterEach(function() {
             jQuery.ajax.restore();
-            facade.restore();
+            facade.destroy();
         });
 
         it('should be a constructor function', function() {
             expect(facade instanceof XhrFacade).to.be.true;
         });
 
-        describe('.add()', function() {
+        it('should add an XHR filter', function(){
+            expect(sinon.FakeXMLHttpRequest.filters.length).to.equal(1);
+        });
+
+        describe('.create()', function() {
 
             it('should be a function', function() {
-                expect(facade.add).to.be.a('function');
+                expect(facade.create).to.be.a('function');
             });
 
             it('should throw error if url is not provided for endpoint', function(){
                 var err = {};
                 try{
-                    facade.add({'name': 'abc'});
+                    facade.create({'name': 'abc'});
                 }catch(e){
                     err = e;
                 }finally{
@@ -55,7 +59,7 @@
                 }
             });
             it('should allow an array as input', function(done){
-                facade.add([{
+                facade.create([{
                     'url': '/blue',
                     'response': function(request){
                         request.respond(JSON.stringify({
@@ -63,13 +67,13 @@
                         }));
                     }
                 }]);
-                facade.get([{url:'/blue'}]).spread(function(blue){
+                facade.ajax([{url:'/blue'}]).spread(function(blue){
                     expect(blue.message).to.equal('blue!');
                     done();
                 });
             });
             it('should allow an object as input', function(done){
-                facade.add({
+                facade.create({
                     'url': '/blue',
                     'response': function(request){
                         request.respond(JSON.stringify({
@@ -77,14 +81,14 @@
                         }));
                     }
                 });
-                facade.get([{url:'/blue'}]).spread(function(blue){
+                facade.ajax([{url:'/blue'}]).spread(function(blue){
                     expect(blue.message).to.equal('blue!');
                     done();
                 });
             });
 
             it('should allow urls to be specified as regular expressions with capture groups', function(done){
-                facade.get([{
+                facade.ajax([{
                     'url': '/custom/aloha!'
                 }])
                 .then(function(responses){
@@ -94,7 +98,7 @@
             });
 
             it('should register seperate default options for each endpoint HTTP method', function(done){
-                facade.add({
+                facade.create({
                     'url': '/method-man',
                     'type': 'GET',
                     'response': function(request){
@@ -103,7 +107,7 @@
                         }));
                     }
                 });
-                facade.add({
+                facade.create({
                     'url': '/method-man',
                     'type': 'POST',
                     'response': function(request){
@@ -112,7 +116,7 @@
                         }));
                     }
                 });
-                facade.get([{
+                facade.ajax([{
                     'url': '/method-man',
                     'type': 'GET'
                 }, {
@@ -124,17 +128,30 @@
                     done();
                 });
             });
+
+            it('makes endpoint available to XmlHttpRequest directly', function(done){
+                $.ajax({
+                    url: '/bonjour',
+                    success: function(response){
+                        expect(response.message).to.equal('bonjour!');
+                        done();
+                    },
+                    error: function(err){
+                        done(err);
+                    }
+                });
+            });
         });
-        describe('.get()', function() {
+        describe('.ajax()', function() {
 
             it('should be a function', function() {
-                expect(facade.get).to.be.a('function');
+                expect(facade.ajax).to.be.a('function');
             });
 
             it('should throw an error when omitting request array', function(){
                 var err = {};
                 try{
-                    facade.get();
+                    facade.ajax();
                 }catch(e){
                     err = e;
                 }finally{
@@ -143,13 +160,13 @@
             });
 
             it('should return a promise', function() {
-                expect(facade.get([]) instanceof RSVP.Promise).to.be.true;
+                expect(facade.ajax([]) instanceof RSVP.Promise).to.be.true;
             });
 
             it('should allow calls to regular endpoints to pass through', function(done) {
                 var message;
                 facade
-                    .get([{
+                    .ajax([{
                         'url': '/test/data/hello.json'
                     }])
                     .then(function(responses) {
@@ -165,7 +182,7 @@
                 var options = {
                     'url': '/test/data/hola.json'
                 };
-                RSVP.all([facade.get([options]), facade.get([options])])
+                RSVP.all([facade.ajax([options]), facade.ajax([options])])
                     .spread(function(first, second) {
                         try {
                             expect(first[0].message).to.equal('hola!');
@@ -183,9 +200,9 @@
             });
 
             it('should not return cached responses for calls to same endpoint when URL fragments differ', function(done){
-                RSVP.all([facade.get([{
+                RSVP.all([facade.ajax([{
                     'url': '/custom/one'
-                }]), facade.get([{
+                }]), facade.ajax([{
                     'url': '/custom/two'
                 }])]).spread(function(first, second){
                     expect(first[0].message).to.equal('one');
@@ -196,7 +213,7 @@
             });
 
             it('should not return cache responses for calls to same endpoint with different request payloads', function(done){
-                facade.get([{
+                facade.ajax([{
                     url: '/custom/wine',
                     data: {
                         param: "cheese"
@@ -216,7 +233,7 @@
             });
 
             it('should pass extra parameters into resolve/reject callbacks', function(done){
-                facade.get([{
+                facade.ajax([{
                     'url': '/bonjour'
                 }], 'extra', 'params')
                     .spread(function(french, extra, params){
@@ -228,14 +245,14 @@
             });
 
             it('calls can be chained', function(done){
-                facade.get([{
+                facade.ajax([{
                     url: '/test/data/hola.json'
                 }])
                     .spread(function(spanish){
-                        return facade.get([{url: '/bonjour'}], spanish);
+                        return facade.ajax([{url: '/bonjour'}], spanish);
                     })
                     .spread(function(french, spanish){
-                        return facade.get([{
+                        return facade.ajax([{
                             'url': '/custom/' + spanish.message + ' and ' + french.message
                         }]);
                     })
@@ -243,6 +260,20 @@
                         expect(response.message).to.equal('hola! and bonjour!');
                         done();
                     });
+            });
+
+        });
+        describe('.destroy()', function(){
+            it('should be a function', function(){
+                expect(facade.destroy).to.be.a('function');
+            });
+            it('should restore XmlHttpRequest global', function(){
+                facade.destroy();
+                expect(new XMLHttpRequest() instanceof sinon.FakeXMLHttpRequest).to.be.false;
+            });
+            it('should clear all XHR filters', function(){
+                facade.destroy();
+                expect(sinon.FakeXMLHttpRequest.filters.length).to.equal(0);
             });
         });
     });
