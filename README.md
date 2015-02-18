@@ -7,8 +7,9 @@ Frontend utility for abstracting server-side endpoints.
 Performs async HTTP request(s). Returns an RSVP.Promise that resolves after all requests have resolved.
 
 **.ajax( options[, args] )**
+
 | Name | Type | Description |
-| ---- | ---- | ---- |
+| ---- | ---- | ----------- |
 | **options** | Array | An array containing settings objects for each request. Pass multiple settings objects to perform multiple requests. The array passed to the resolve callback will contain the responses in the same order that they were requested. |
 
 ```javascript
@@ -27,8 +28,9 @@ facade.ajax([{ url: '/peas' }, { url: '/carrots' }])
   });
 ```
 
+**.ajax( options[, args] )**
 | Name | Type | Description |
-| ---- | ---- | ---- |
+| ---- | ---- | ----------- |
 | **args** | n/a | Any additional arguments will be passed on to the resolve callback. |
 
 ```javascript
