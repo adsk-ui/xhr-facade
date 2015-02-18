@@ -24,7 +24,7 @@ facade.ajax([{ url: '/peas' }, { url: '/carrots' }])
     // responses[1] === carrots response
   });
 ```
-XhrFacade augments RSVP.Promise with a "spread" method that passes the response objects to the call back as separate arguments.
+XhrFacade augments RSVP.Promise with a "spread" method that passes the response objects to the callback as separate arguments.
 ```javascript
 facade.ajax([{ url: '/peas' }, { url: '/carrots' }])
   .spread(function(peas, carrots){
@@ -36,7 +36,7 @@ facade.ajax([{ url: '/peas' }, { url: '/carrots' }])
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| **args** | n/a | Any additional arguments will be passed on to the resolve callback. |
+| **args** | anything | Any additional arguments will be passed on to the resolve callback. |
 
 ```javascript
 facade.ajax([{ url: '/peas' }, { url: '/carrots' }], 'hello!')
@@ -54,7 +54,7 @@ Configures virtual Ajax endpoints.
 | ---- | ---- | ----------- |
 | **options** | Object, Array | The configuration settings for the virtual endpoint. Pass an array of objects to configure multiple endpoints at once. |
 
-The each endpoint configuration must include:
+Options for configuration settings:
 
 | Name | Type | Required | Description |
 | ---- | ---- | -------- | ----------- |
@@ -91,4 +91,4 @@ facade.create({
 $.ajax({ url: '/food/peas' });
 ```
 ### .destroy()
-Restores the global XMLHttpRequest. 
+Restores the global XMLHttpRequest object. 
