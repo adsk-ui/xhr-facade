@@ -4,13 +4,17 @@ Frontend utility for abstracting server-side endpoints.
 ## Documentation
 
 ### .ajax( options[, args] )
-Performs async HTTP request(s). Returns an RSVP.Promise that resolves after all requests have resolved. 
+Performs async HTTP request(s). This method works similarly to [jQuery.ajax](http://api.jquery.com/jquery.ajax/) with a few key differences:
+
+1. Expects an array as input
+2. Returns an [RSVP.Promise](https://github.com/tildeio/rsvp.js/) object that resolves after all requests have resolved. The array passed to the resolve callback will contain the responses in the same order that they were requested
+2. Cached responses provided for multiple requests to a URL when "type" (GET, POST, etc) and "data" (the request payload) are the same
 
 **.ajax( options )**
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| **options** | Array | An array containing settings objects for each request. Pass multiple settings objects to perform multiple requests. The array passed to the resolve callback will contain the responses in the same order that they were requested. The settings can be anything supported by jQuery.ajax. See: http://api.jquery.com/jquery.ajax/#jQuery-ajax-settings. Cached responses will be provided for multiple requests to a URL when type and data settings are the same.|
+| **options** | Array | An array containing settings objects for each request. Pass multiple settings objects to perform multiple requests. The settings objects can contain any of [the properties supported by jQuery.ajax](http://api.jquery.com/jquery.ajax/#jQuery-ajax-settings). |
 
 ```javascript
 var facade = new XhrFacade();
