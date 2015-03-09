@@ -109,10 +109,10 @@
             this.server = server;
         }
 
-        XhrFacade.REQUEST_ARRAY_REQUIRED = 'You must pass a request array to XhrFacade.get() method.';
-        XhrFacade.URL_REQUIRED = 'You must provide a URL when getting an endpoint.';
-        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response value when adding a virtual endpoint.';
-        XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when adding an endpoint.';
+        XhrFacade.REQUEST_ARRAY_REQUIRED = 'You must pass an array to XhrFacade.ajax() method.';
+        XhrFacade.URL_REQUIRED = 'You must provide a URL when requesting an endpoint.';
+        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response value when creating an endpoint.';
+        XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
         XhrFacade.prototype.create = function(config) {
             var configLength,
@@ -187,6 +187,18 @@
         XhrFacade.prototype.destroy = function() {
             this.server.restore();
             this.server.xhr.filters = [];
+        };
+
+
+        /**
+         * Static API
+         * --------------------------------
+         */
+        var singleton;
+
+        XhrFacade.getInstance = function(){
+            singleton = singleton || new XhrFacade();
+            return singleton;
         };
 
         return XhrFacade;

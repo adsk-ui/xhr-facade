@@ -42,6 +42,18 @@
             expect(sinon.FakeXMLHttpRequest.filters.length).to.equal(1);
         });
 
+        describe('.getInstance()', function(){
+            it('should be a static method', function(){
+                expect(XhrFacade.getInstance).to.be.a('function');
+            });
+
+            it('should return a singleton instance', function(){
+                var instance1 = XhrFacade.getInstance(),
+                    instance2 = XhrFacade.getInstance();
+                expect(instance1).to.equal(instance2);
+            });
+        });
+
         describe('.create()', function() {
 
             it('should be a function', function() {

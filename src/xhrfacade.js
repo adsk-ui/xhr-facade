@@ -189,6 +189,18 @@
             this.server.xhr.filters = [];
         };
 
+
+        /**
+         * Static API
+         * --------------------------------
+         */
+        var singleton;
+
+        XhrFacade.getInstance = function(){
+            singleton = singleton || new XhrFacade();
+            return singleton;
+        };
+
         return XhrFacade;
     }
     if (typeof define === 'function' && define.amd) {
