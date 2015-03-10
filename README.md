@@ -1,4 +1,4 @@
-# xhrfacade
+# XhrFacade
 Frontend utility for abstracting server-side endpoints.
 
 ## Documentation
@@ -92,3 +92,6 @@ $.ajax({ url: '/food/peas' });
 ```
 ### .destroy()
 Restores the global XMLHttpRequest object. 
+
+### XhrFacade.getInstance()
+A static method that returns a singleton instance.
