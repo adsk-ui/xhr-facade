@@ -224,6 +224,23 @@
                 });
             });
 
+            it('should not return cached responses if "cache" option is false', function(done){
+                var options = {
+                    url: '/test/data/hola.json'
+                };
+                facade.ajax([options])
+                    .spread(function(first) {
+                        options.cache = false;
+                        return facade.ajax([options], first);
+                    })
+                    .spread(function(second, first){
+                        expect(first.message).to.equal('hola!');
+                        expect(second.message).to.equal('hola!');
+                        expect(jQuery.ajax.calledTwice).to.be.true;
+                        done();
+                    });
+            });
+
             it('should not return cache responses for calls to same endpoint with different request payloads', function(done){
                 facade.ajax([{
                     url: '/custom/wine',
@@ -260,18 +277,18 @@
                 facade.ajax([{
                     url: '/test/data/hola.json'
                 }])
-                    .spread(function(spanish){
-                        return facade.ajax([{url: '/bonjour'}], spanish);
-                    })
-                    .spread(function(french, spanish){
-                        return facade.ajax([{
-                            'url': '/custom/' + spanish.message + ' and ' + french.message
-                        }]);
-                    })
-                    .spread(function(response){
-                        expect(response.message).to.equal('hola! and bonjour!');
-                        done();
-                    });
+                .spread(function(spanish){
+                    return facade.ajax([{url: '/bonjour'}], spanish);
+                })
+                .spread(function(french, spanish){
+                    return facade.ajax([{
+                        'url': '/custom/' + spanish.message + ' and ' + french.message
+                    }]);
+                })
+                .spread(function(response){
+                    expect(response.message).to.equal('hola! and bonjour!');
+                    done();
+                });
             });
 
         });

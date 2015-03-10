@@ -161,16 +161,15 @@
                     request.id = request.url + '+' + request.type;
                     request.cache = isBoolean(request.cache) ? request.cache : true;
 
-                    cache = getEndpointCache(this.endpoints, request.id, request);
+                    if (request.cache)
+                        cache = getEndpointCache(this.endpoints, request.id, request);
 
                     if (cache) {
                         deferred = cache;
                     } else {
                         deferred = $.ajax(request);
-                        if (request.cache) {
-                            setEndpointCache(this.endpoints, request.id, deferred);
-                            setEndpointOptions(this.endpoints, request.id, request);
-                        }
+                        setEndpointCache(this.endpoints, request.id, deferred);
+                        setEndpointOptions(this.endpoints, request.id, request);
                     }
                 } else {
                     deferred = request;
