@@ -163,6 +163,7 @@
                 settings;
 
             settings = extend({
+                proxyTo: $.ajax,
                 aggregator: RSVP.allSettled
             }, options);
 
@@ -183,7 +184,7 @@
                     if (cache) {
                         deferred = cache;
                     } else {
-                        deferred = $.ajax(request);
+                        deferred = settings.proxyTo(request);
                         setEndpointCache(this.endpoints, request.id, deferred);
                         setEndpointOptions(this.endpoints, request.id, request);
                     }
