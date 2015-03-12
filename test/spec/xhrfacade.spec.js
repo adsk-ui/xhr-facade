@@ -84,7 +84,7 @@
                     }
                 }]);
                 facade.ajax({url:'/blue'}).then(function(response){
-                    expect(response[0].message).to.equal('blue!');
+                    expect(response[0].value.message).to.equal('blue!');
                     done();
                 });
             });
@@ -98,7 +98,7 @@
                     }
                 });
                 facade.ajax({url:'/blue'}).then(function(response){
-                    expect(response[0].message).to.equal('blue!');
+                    expect(response[0].value.message).to.equal('blue!');
                     done();
                 });
             });
@@ -108,7 +108,7 @@
                     'url': '/custom/aloha!'
                 })
                 .then(function(responses){
-                    expect(responses[0].message).to.equal("aloha!");
+                    expect(responses[0].value.message).to.equal("aloha!");
                     done();
                 });
             });
@@ -139,8 +139,8 @@
                     'url': '/method-man',
                     'type': 'POST'
                 }).then(function(response){
-                    expect(response[0].message).to.equal('you got it');
-                    expect(response[1].message).to.equal('poster boy');
+                    expect(response[0].value.message).to.equal('you got it');
+                    expect(response[1].value.message).to.equal('poster boy');
                     done();
                 });
             });
@@ -170,31 +170,24 @@
 
             it('returned RSVP.Promise should be augmented with .spread() method', function(done){
                 facade.ajax({id: 1}, {id: 2}).spread(function(o1, o2){
-                    expect(o1.id).to.equal(1);
-                    expect(o2.id).to.equal(2);
+                    expect(o1.value.id).to.equal(1);
+                    expect(o2.value.id).to.equal(2);
                     done();
                 });
             });
 
             it('returned RSVP.Promise should be augmented with .done() method', function(done){
                 facade.ajax({id: 1}, {id: 2}).done(function(response){
-                    expect(response[0].id).to.equal(1);
-                    expect(response[1].id).to.equal(2);
-                    done();
-                });
-            });
-
-            it('returned RSVP.Promise should be augmented with .fail() method', function(done){
-                facade.ajax({url: '/error'}).fail(function(jqXhr){
-                    expect(jqXhr.status).to.equal(404);
+                    expect(response[0].value.id).to.equal(1);
+                    expect(response[1].value.id).to.equal(2);
                     done();
                 });
             });
 
             it('returned RSVP.Promise should be augmented with .always() method', function(done){
                 facade.ajax({url: '/error'}, {id: 2}).always(function(response){
-                    expect(response[0].id).to.equal(1);
-                    expect(response[1].id).to.equal(2);
+                    expect(response[0].state).to.equal('rejected');
+                    expect(response[1].value.id).to.equal(2);
                     done();
                 });
             });
@@ -206,7 +199,7 @@
                         'url': '/test/data/hello.json'
                     })
                     .then(function(responses) {
-                        message = responses[0].message;
+                        message = responses[0].value.message;
                     })
                     .finally(function(){
                         expect(message).to.equal('hello!');
@@ -220,8 +213,8 @@
                 };
                 RSVP.all([facade.ajax(options), facade.ajax(options)])
                     .spread(function(first, second) {
-                        expect(first[0].message).to.equal('hola!');
-                        expect(second[0].message).to.equal('hola!');
+                        expect(first[0].value.message).to.equal('hola!');
+                        expect(second[0].value.message).to.equal('hola!');
                         expect(jQuery.ajax.calledOnce).to.be.true;
                         done();
                     });
@@ -233,8 +226,8 @@
                 }), facade.ajax({
                     'url': '/custom/two'
                 })]).spread(function(first, second){
-                    expect(first[0].message).to.equal('one');
-                    expect(second[0].message).to.equal('two');
+                    expect(first[0].value.message).to.equal('one');
+                    expect(second[0].value.message).to.equal('two');
                     expect(jQuery.ajax.callCount).to.equal(2);
                     done();
                 });
@@ -247,11 +240,11 @@
                 facade.ajax(options)
                     .spread(function(first) {
                         options.cache = false;
-                        return facade.ajax(options, first);
+                        return facade.ajax(options, first.value);
                     })
                     .spread(function(second, first){
-                        expect(first.message).to.equal('hola!');
-                        expect(second.message).to.equal('hola!');
+                        expect(first.value.message).to.equal('hola!');
+                        expect(second.value.message).to.equal('hola!');
                         expect(jQuery.ajax.calledTwice).to.be.true;
                         done();
                     });
@@ -269,10 +262,10 @@
                         param: "pretzels"
                     }
                 }).spread(function(first, second){
-                    expect(first.message).to.equal('wine');
-                    expect(first.param).to.equal('cheese');
-                    expect(second.message).to.equal('beer');
-                    expect(second.param).to.equal('pretzels');
+                    expect(first.value.message).to.equal('wine');
+                    expect(first.value.param).to.equal('cheese');
+                    expect(second.value.message).to.equal('beer');
+                    expect(second.value.param).to.equal('pretzels');
                     done();
                 });
             });
@@ -280,9 +273,9 @@
             it('should pass extra parameters into resolve/reject callbacks', function(done){
                 facade.ajax({'url': '/bonjour' }, 'extra', 'params')
                     .spread(function(french, extra, params){
-                        expect(french.message).to.equal("bonjour!");
-                        expect(extra).to.equal('extra');
-                        expect(params).to.equal('params');
+                        expect(french.value.message).to.equal("bonjour!");
+                        expect(extra.value).to.equal('extra');
+                        expect(params.value).to.equal('params');
                         done();
                     });
             });
@@ -292,19 +285,32 @@
                     url: '/test/data/hola.json'
                 })
                 .spread(function(spanish){
-                    return facade.ajax({url: '/bonjour'}, spanish);
+                    return facade.ajax({url: '/bonjour'}, spanish.value);
                 })
                 .spread(function(french, spanish){
                     return facade.ajax({
-                        'url': '/custom/' + spanish.message + ' and ' + french.message
+                        'url': '/custom/' + spanish.value.message + ' and ' + french.value.message
                     });
                 })
                 .spread(function(response){
-                    expect(response.message).to.equal('hola! and bonjour!');
+                    expect(response.value.message).to.equal('hola! and bonjour!');
                     done();
                 });
             });
 
+            it('should invoke spread callback when calls partially fail', function(done){
+                facade.ajax({
+                    url: '/test/data/hola.json'
+                },{
+                    url: '/error'
+                }).spread(function(response1, response2){
+                    expect(response1.state).to.equal('fulfilled');
+                    expect(response1.value.message).to.equal('hola!');
+                    expect(response2.state).to.equal('rejected');
+                    expect(response2.reason.statusText).to.equal('Not Found');
+                    done();
+                });
+            });
         });
         describe('.destroy()', function(){
             it('should be a function', function(){

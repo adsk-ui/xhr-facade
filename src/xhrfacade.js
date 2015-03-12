@@ -15,13 +15,6 @@
             return this;
         };
 
-        RSVP.Promise.prototype.fail = function(){
-            var callbacks = Array.prototype.slice.call(arguments);
-            for(var i = 0; i < callbacks.length; i++ )
-                this.then(null, callbacks[i]);
-            return this;
-        };
-
         RSVP.Promise.prototype.always = function(){
             var callbacks = Array.prototype.slice.call(arguments);
             for(var i = 0; i < callbacks.length; i++ ){
@@ -197,9 +190,7 @@
                 deferreds.push(deferred);
             }
 
-            // deferreds = deferreds.concat(Array.prototype.slice.call(arguments, 1));
-
-            return RSVP.all(deferreds);
+            return RSVP.allSettled(deferreds);
         };
 
         XhrFacade.prototype.destroy = function() {
