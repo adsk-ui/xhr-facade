@@ -240,6 +240,16 @@
                 });
             });
 
+            it('provides option for proxying to a specified function', function(done){
+                var options = {url: '/test/data/hola.json'};
+                facade.ajax(options, {
+                    proxyTo: function(request){
+                        expect(request).to.equal(options);
+                        done();
+                    }
+                });
+            });
+
         });
 
         describe('.create()', function() {
