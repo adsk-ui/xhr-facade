@@ -154,15 +154,19 @@
             }
         };
 
-        XhrFacade.prototype.ajax = function() {
+        XhrFacade.prototype.ajax = function(requests, options) {
             var deferreds = [],
                 deferred,
-                requests,
                 requestsLength,
                 request,
-                cache;
+                cache,
+                settings;
 
-            requests = Array.prototype.slice.call(arguments);
+            settings = extend({
+                aggregator: RSVP.allSettled
+            }, options);
+
+            requests = !requests ? [] : isArray(requests) ? requests : [requests];
             requestsLength = requests.length;
 
             for (var i = 0; i < requestsLength; i++) {
@@ -190,7 +194,7 @@
                 deferreds.push(deferred);
             }
 
-            return RSVP.allSettled(deferreds);
+            return settings.aggregator(deferreds);
         };
 
         XhrFacade.prototype.destroy = function() {

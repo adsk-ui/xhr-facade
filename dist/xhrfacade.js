@@ -1,11 +1,26 @@
 (function() {
-
+    'use strict';
     function factory($, RSVP, sinon) {
 
-        RSVP.Promise.prototype.spread = function(onFulfillment, onRejection, label) {
+        RSVP.Promise.prototype.spread = function(resolve, reject, label) {
             return this.then(function(array) {
-                return onFulfillment.apply(void 0, array);
-            }, onRejection, label);
+                return resolve.apply(void 0, array);
+            }, reject, label);
+        };
+
+        RSVP.Promise.prototype.done = function(){
+            var callbacks = Array.prototype.slice.call(arguments);
+            for(var i = 0; i < callbacks.length; i++ )
+                this.then(callbacks[i]);
+            return this;
+        };
+
+        RSVP.Promise.prototype.always = function(){
+            var callbacks = Array.prototype.slice.call(arguments);
+            for(var i = 0; i < callbacks.length; i++ ){
+                this.then(callbacks[i], callbacks[i]);
+            }
+            return this;
         };
 
         var slice = Array.prototype.slice;
@@ -139,18 +154,19 @@
             }
         };
 
-        XhrFacade.prototype.ajax = function() {
+        XhrFacade.prototype.ajax = function(requests, options) {
             var deferreds = [],
                 deferred,
-                requests,
                 requestsLength,
                 request,
-                cache;
+                cache,
+                settings;
 
-            if (!arguments.length || !isArray(arguments[0]))
-                throw new Error(XhrFacade.REQUEST_ARRAY_REQUIRED);
+            settings = extend({
+                aggregator: RSVP.allSettled
+            }, options);
 
-            requests = arguments.length ? arguments[0] : [];
+            requests = !requests ? [] : isArray(requests) ? requests : [requests];
             requestsLength = requests.length;
 
             for (var i = 0; i < requestsLength; i++) {
@@ -178,9 +194,7 @@
                 deferreds.push(deferred);
             }
 
-            deferreds = deferreds.concat(Array.prototype.slice.call(arguments, 1));
-
-            return RSVP.all(deferreds);
+            return settings.aggregator(deferreds);
         };
 
         XhrFacade.prototype.destroy = function() {

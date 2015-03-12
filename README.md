@@ -3,48 +3,69 @@ Frontend utility for abstracting server-side endpoints.
 
 ## Documentation
 
-### .ajax( options[, args] )
+### .ajax( request[, options] )
 Performs async HTTP request(s). This method works similarly to [jQuery.ajax](http://api.jquery.com/jquery.ajax/) with a few key differences:
 
-1. Expects an array as input
-2. Returns an [RSVP.Promise](https://github.com/tildeio/rsvp.js/) object that resolves after all requests have resolved. The array passed to the resolve callback will contain the responses in the same order that they were requested
+1. The request parameter can be an array of objects for making multiple calls in parallel.
+2. By default, returns an [RSVP.Promise](https://github.com/tildeio/rsvp.js/) object that resolves after all requests have resolved. The array passed to the resolve callback will contain the responses in the same order that they were requested
 2. Cached responses provided for multiple requests to a URL when "type" (GET, POST, etc) and "data" (the request payload) are the same
 
-**.ajax( options )**
+**.ajax( request )**
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| **options** | Array | An array containing settings objects for each request. Pass multiple settings objects to perform multiple requests. The settings objects can contain any of [the properties supported by jQuery.ajax](http://api.jquery.com/jquery.ajax/#jQuery-ajax-settings). |
+| **request** | Object, Array | A settings object for the request. Pass an array with multiple settings objects to perform multiple requests. The settings objects are passed to jQuery.ajax and therefore can contain any of [the properties supported by jQuery.ajax](http://api.jquery.com/jquery.ajax/#jQuery-ajax-settings). |
 
 ```javascript
 var facade = new XhrFacade();
 facade.ajax([{ url: '/peas' }, { url: '/carrots' }])
   .then(function(responses){
-    // responses[0] === peas response
-    // responses[1] === carrots response
+    // responses[0].state === "fulfilled"
+    // responses[0].value == peas response...
+    // responses[1].state === "fulfilled"
+    // responses[1].value == carrots response...
   });
 ```
 XhrFacade augments RSVP.Promise with a "spread" method that passes the response objects to the callback as separate arguments.
 ```javascript
 facade.ajax([{ url: '/peas' }, { url: '/carrots' }])
   .spread(function(peas, carrots){
-    //...
+    // peas.value == peas response...
+    // carrots.value == carrots response...
   });
 ```
 
-**.ajax( options, args )**
+**.ajax( request, options )**
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| **args** | anything | Any additional arguments will be passed on to the resolve callback. |
+| **options** | Object | Configuration options for call. See below. |
+
+Ajax configuration settings:
+
+| Name | Type | Required | Description |
+| ---- | ---- | -------- | ----------- |
+| aggregator | Function | No | A custom function for handling the jqXHR object(s) for the request(s). |
+
 
 ```javascript
-facade.ajax([{ url: '/peas' }, { url: '/carrots' }], 'hello!')
+facade.ajax([{ url: '/peas' }, { url: '/carrots' }, 'hello!'] )
   .spread(function(peas, carrots, message){
-    // message === 'hello!'
+    // message.value === 'hello!'
   });
 ```
 
+```javascript
+facade.ajax({url: '/peas'}, {
+    aggregator: function(promises){
+        return $.when.apply($, promises);
+    }
+}).done(function(response, textStatus, jqXHR){
+    // response == peas response...
+    // textStatus === "success"
+    // jqXHR.status === 200
+});
+```
 ### .create( options )
 Configures virtual Ajax endpoints.
 
@@ -91,7 +112,7 @@ facade.create({
 $.ajax({ url: '/food/peas' });
 ```
 ### .destroy()
-Restores the global XMLHttpRequest object. 
+Restores the global XMLHttpRequest object.
 
 ### XhrFacade.getInstance()
 A static method that returns a singleton instance.
