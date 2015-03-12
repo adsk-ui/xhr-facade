@@ -34,6 +34,12 @@ facade.ajax([{ url: '/peas' }, { url: '/carrots' }])
     // carrots.value == carrots response...
   });
 ```
+```javascript
+facade.ajax([{ url: '/peas' }, { url: '/carrots' }, 'hello!'] )
+  .spread(function(peas, carrots, message){
+    // message.value === 'hello!'
+  });
+```
 
 **.ajax( request, options )**
 
@@ -47,13 +53,6 @@ Ajax configuration settings:
 | ---- | ---- | -------- | ----------- |
 | aggregator | Function | No | A custom function for handling the jqXHR object(s) for the request(s). |
 
-
-```javascript
-facade.ajax([{ url: '/peas' }, { url: '/carrots' }, 'hello!'] )
-  .spread(function(peas, carrots, message){
-    // message.value === 'hello!'
-  });
-```
 
 ```javascript
 facade.ajax({url: '/peas'}, {
