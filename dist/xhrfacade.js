@@ -63,7 +63,7 @@
 
         function setEndpointOptions(endpoints, id, options) {
             var endpoint = endpoints[id] || {};
-            options.data = options.data && JSON.stringify(options.data) || '';
+            options.data = options.data;
             endpoint.options = options;
             endpoints[id] = endpoint;
         }
@@ -75,7 +75,7 @@
                 match;
             if (!endpointCache)
                 return null;
-            match = endpointOptions.data === options.data;
+            match = JSON.stringify(endpointOptions.data) === JSON.stringify(options.data);
             return match ? endpointCache : null;
         }
 
