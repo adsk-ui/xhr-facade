@@ -63,6 +63,7 @@
 
         function setEndpointOptions(endpoints, id, options) {
             var endpoint = endpoints[id] || {};
+            options.data = options.data && JSON.stringify(options.data) || '';
             endpoint.options = options;
             endpoints[id] = endpoint;
         }
