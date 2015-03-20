@@ -68,12 +68,12 @@
         }
 
         function matchData(data1, data2){
-            return JSON.stringify(data1) === JSON.stringify(data2);
+            return data1 === data2;
         }
 
-        function matchOptions(options1, options2){
-            var match = matchUrlParams(options1.url, options2.url);
-            return match && matchData(options1.data, options2.data);
+        function matchOptions(cachedOptions, request){
+            var match = matchUrlParams(cachedOptions.url, request.url);
+            return match && matchData(cachedOptions.data, JSON.stringify(request.data));
         }
 
         function getEndpointId(url, method){
@@ -87,11 +87,15 @@
 
         function setEndpointOptions(endpoints, id, options) {
             var endpoint = endpoints[id] || {};
-            endpoint.options = options || {};
+            endpoint.options = {
+                url: options.url,
+                data: JSON.stringify(options.data),
+                response: options.response
+            };
             endpoints[id] = endpoint;
         }
 
-        function getEndpointCache(endpoints, id, options) {
+        function getEndpointCache(endpoints, id, request) {
             var endpoint = endpoints[id] || {},
                 endpointOptions = endpoint.options || {},
                 endpointCache = endpoint.cache,
@@ -100,7 +104,7 @@
             if (!endpointCache)
                 return null;
 
-            match = matchOptions(endpointOptions, options);
+            match = matchOptions(endpointOptions, request);
             return match ? endpointCache : null;
         }
 
