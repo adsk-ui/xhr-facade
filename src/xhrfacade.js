@@ -56,6 +56,30 @@
             return obj;
         }
 
+        function getUrlParams(url){
+            var params = url.match(/\?([^#]*)/);
+            // just the params, no ?
+            params = params && params.length && params[1];
+            return params || '';
+        }
+
+        function matchUrlParams(url1, url2){
+            return getUrlParams(url1) === getUrlParams(url2);
+        }
+
+        function matchData(data1, data2){
+            return JSON.stringify(data1) === JSON.stringify(data2);
+        }
+
+        function matchOptions(options1, options2){
+            var match = matchUrlParams(options1.url, options2.url);
+            return match && matchData(options1.data, options2.data);
+        }
+
+        function getEndpointId(url, method){
+            return url.replace(/\?.*/, '') + '+' + method;
+        }
+
         function getEndpointOptions(endpoints, id) {
             var endpoint = endpoints[id];
             return endpoint && endpoint.options || {};
@@ -63,8 +87,7 @@
 
         function setEndpointOptions(endpoints, id, options) {
             var endpoint = endpoints[id] || {};
-            options.data = options.data;
-            endpoint.options = options;
+            endpoint.options = options || {};
             endpoints[id] = endpoint;
         }
 
@@ -73,9 +96,11 @@
                 endpointOptions = endpoint.options || {},
                 endpointCache = endpoint.cache,
                 match;
+
             if (!endpointCache)
                 return null;
-            match = JSON.stringify(endpointOptions.data) === JSON.stringify(options.data);
+
+            match = matchOptions(endpointOptions, options);
             return match ? endpointCache : null;
         }
 
@@ -125,9 +150,7 @@
             this.server = server;
         }
 
-        XhrFacade.REQUEST_ARRAY_REQUIRED = 'You must pass an array to XhrFacade.ajax() method.';
-        XhrFacade.URL_REQUIRED = 'You must provide a URL when requesting an endpoint.';
-        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response value when creating an endpoint.';
+        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
         XhrFacade.prototype.create = function(config) {
@@ -176,7 +199,7 @@
 
                 if (request.url) {
                     request.type = request.type || 'GET';
-                    request.id = request.url + '+' + request.type;
+                    request.id = getEndpointId(request.url, request.type);
                     request.cache = isBoolean(request.cache) ? request.cache : true;
 
                     if (request.cache)

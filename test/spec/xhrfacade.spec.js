@@ -123,14 +123,33 @@
             });
 
             it('should return cached responses for duplicate requests', function(done) {
-                var options = {
-                    'url': '/test/data/hola.json'
-                };
-                RSVP.all([facade.ajax(options), facade.ajax(options)])
+                var options1 = {
+                        url: '/test/data/hola.json'
+                    },
+                    options2 = {
+                        url: '/test/data/hola.json'
+                    };
+                RSVP.all([facade.ajax(options1), facade.ajax(options2)])
                     .spread(function(first, second) {
                         expect(first[0].value.message).to.equal('hola!');
                         expect(second[0].value.message).to.equal('hola!');
                         expect(jQuery.ajax.calledOnce).to.be.true;
+                        done();
+                    });
+            });
+
+            it('should not return cached responses for calls to same endpoint when URL params differ', function(done) {
+                var options1 = {
+                        url: '/test/data/hola.json'
+                    },
+                    options2 = {
+                        url: '/test/data/hola.json?x=y'
+                    };
+                RSVP.all([facade.ajax(options1), facade.ajax(options2)])
+                    .spread(function(first, second) {
+                        expect(first[0].value.message).to.equal('hola!');
+                        expect(second[0].value.message).to.equal('hola!');
+                        expect(jQuery.ajax.calledTwice).to.be.true;
                         done();
                     });
             });
@@ -144,6 +163,26 @@
                     expect(first[0].value.message).to.equal('one');
                     expect(second[0].value.message).to.equal('two');
                     expect(jQuery.ajax.callCount).to.equal(2);
+                    done();
+                });
+            });
+
+            it('should not return cache responses for calls to same endpoint when data options differ', function(done){
+                facade.ajax([{
+                    url: '/custom/pinot',
+                    data: {
+                        param: "noir"
+                    }
+                }, {
+                    url: '/custom/pinot',
+                    data: {
+                        param: "grigio"
+                    }
+                }]).spread(function(first, second){
+                    expect(first.value.message).to.equal('pinot');
+                    expect(first.value.param).to.equal('noir');
+                    expect(second.value.message).to.equal('pinot');
+                    expect(second.value.param).to.equal('grigio');
                     done();
                 });
             });
@@ -163,26 +202,6 @@
                         expect(jQuery.ajax.calledTwice).to.be.true;
                         done();
                     });
-            });
-
-            it('should not return cache responses for calls to same endpoint with different request payloads', function(done){
-                facade.ajax([{
-                    url: '/custom/wine',
-                    data: {
-                        param: "cheese"
-                    }
-                }, {
-                    url: '/custom/beer',
-                    data: {
-                        param: "pretzels"
-                    }
-                }]).spread(function(first, second){
-                    expect(first.value.message).to.equal('wine');
-                    expect(first.value.param).to.equal('cheese');
-                    expect(second.value.message).to.equal('beer');
-                    expect(second.value.param).to.equal('pretzels');
-                    done();
-                });
             });
 
             it('should pass extra parameters into resolve/reject callbacks', function(done){
