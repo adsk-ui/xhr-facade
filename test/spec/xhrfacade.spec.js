@@ -205,11 +205,11 @@
             });
 
             it('should pass extra parameters into resolve/reject callbacks', function(done){
-                facade.ajax([{'url': '/bonjour' }, 'extra', 'params'])
-                    .spread(function(french, extra, params){
+                facade.ajax([{'url': '/bonjour' }, 'extra', null, undefined])
+                    .spread(function(french, extra, n, u){
                         expect(french.value.message).to.equal("bonjour!");
-                        expect(extra.value).to.equal('extra');
-                        expect(params.value).to.equal('params');
+                        expect(n.value).to.equal(null);
+                        expect(u.value).to.equal(undefined);
                         done();
                     });
             });

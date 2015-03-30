@@ -1,6 +1,6 @@
 {
   "name": "xhrfacade",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Frontend utility for abstracting server-side endpoints",
   "main": "n/a",
   "scripts": {

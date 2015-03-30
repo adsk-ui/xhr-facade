@@ -201,7 +201,7 @@
             for (var i = 0; i < requestsLength; i++) {
                 request = requests[i];
 
-                if (request.url) {
+                if (request && request.url) {
                     request.type = request.type || 'GET';
                     request.id = getEndpointId(request.url, request.type);
                     request.cache = isBoolean(request.cache) ? request.cache : true;
