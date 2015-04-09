@@ -10,9 +10,12 @@
   "license": "ISC",
   "devDependencies": {
     "blockref": "git://github.com/adsk-ui/blockref.git#v0.0.0",
+    "chai": "^2.2.0",
     "gulp": "^3.8.10",
     "gulp-connect": "^2.2.0",
     "gulp-rename": "^1.2.0",
+    "sinon": "^1.14.1",
+    "sinon-chai": "^2.7.0",
     "slash": "^1.0.0",
     "wiredep": "^2.2.2",
     "wireto": "git://github.com/adsk-ui/wireto.git#v0.0.0"

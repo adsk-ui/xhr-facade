@@ -5,7 +5,9 @@
 
     describe('XhrFacade', function() {
         var facade,
-            server;
+            server,
+            requestA,
+            requestB;
 
         beforeEach(function() {
             sinon.spy(jQuery, 'ajax');
@@ -31,6 +33,18 @@
                 url: /\/error/,
                 response: [404, null, '']
             });
+            requestA = {
+                url: 'abc',
+                data: {
+                    message: 'yo'
+                }
+            };
+            requestB = {
+                url: 'abc',
+                data: {
+                    message: 'yo'
+                }
+            };
         });
 
         afterEach(function() {
@@ -58,13 +72,33 @@
             });
         });
 
+        describe('.match()', function(){
+            it('should be a static method', function(){
+                expect(XhrFacade.match).to.be.a('function');
+            });
+            it('should accept two arguments', function(){
+                expect(XhrFacade.match.length).to.equal(2);
+            });
+            it('should return true if url and data properties of arguments match', function(){
+                expect(XhrFacade.match(requestA, requestB)).to.be.true;
+            });
+            it('should return false if url properties of arguments differ', function(){
+                requestA.url = 'xyz';
+                expect(XhrFacade.match(requestA, requestB)).to.be.false;
+            });
+            it('should return false if data properties of arguments differ', function(){
+                requestA.data.message = 'hi';
+                expect(XhrFacade.match(requestA, requestB)).to.be.false;
+            });
+        });
+
         describe('.ajax()', function() {
 
-            it('should be a function', function() {
+            it('is a function', function() {
                 expect(facade.ajax).to.be.a('function');
             });
 
-            it('should return an RSVP.Promise', function() {
+            it('returns an RSVP.Promise', function() {
                 expect(facade.ajax() instanceof RSVP.Promise).to.be.true;
             });
 
@@ -83,7 +117,7 @@
                 });
             });
 
-            it('returned RSVP.Promise should be augmented with .spread() method', function(done){
+            it('returns an RSVP.Promise augmented with .spread() method', function(done){
                 facade.ajax([{id: 1}, {id: 2}]).spread(function(o1, o2){
                     expect(o1.value.id).to.equal(1);
                     expect(o2.value.id).to.equal(2);
@@ -91,7 +125,7 @@
                 });
             });
 
-            it('returned RSVP.Promise should be augmented with .done() method', function(done){
+            it('returns RSVP.Promise augmented with .done() method', function(done){
                 facade.ajax([{id: 1}, {id: 2}]).done(function(response){
                     expect(response[0].value.id).to.equal(1);
                     expect(response[1].value.id).to.equal(2);
@@ -99,7 +133,7 @@
                 });
             });
 
-            it('returned RSVP.Promise should be augmented with .always() method', function(done){
+            it('returns RSVP.Promise augmented with .always() method', function(done){
                 facade.ajax([{url: '/error'}, {id: 2}]).always(function(response){
                     expect(response[0].state).to.equal('rejected');
                     expect(response[1].value.id).to.equal(2);
@@ -107,7 +141,7 @@
                 });
             });
 
-            it('should allow calls to regular endpoints to pass through', function(done) {
+            it('allows calls to regular endpoints to pass through', function(done) {
                 var message;
                 facade
                     .ajax({
@@ -122,7 +156,7 @@
                     });
             });
 
-            it('should return cached responses for duplicate requests', function(done) {
+            it('returns cached responses for duplicate requests', function(done) {
                 var options1 = {
                         url: '/test/data/hola.json'
                     },
@@ -138,7 +172,7 @@
                     });
             });
 
-            it('should not return cached responses for calls to same endpoint when URL params differ', function(done) {
+            it('makes separate calls to an endpoint when URL params differ', function(done) {
                 var options1 = {
                         url: '/test/data/hola.json'
                     },
@@ -154,7 +188,7 @@
                     });
             });
 
-            it('should not return cached responses for calls to same endpoint when URL fragments differ', function(done){
+            it('makes separate calls to an endpoint when URL fragments differ', function(done){
                 RSVP.all([facade.ajax({
                     'url': '/custom/one'
                 }), facade.ajax({
@@ -167,7 +201,7 @@
                 });
             });
 
-            it('should not return cache responses for calls to same endpoint when data options differ', function(done){
+            it('makes separate calls to an endpoint when data options differ', function(done){
                 facade.ajax([{
                     url: '/custom/pinot',
                     data: {
@@ -187,7 +221,7 @@
                 });
             });
 
-            it('should not return cached responses if "cache" option is false', function(done){
+            it('forces new call if "cache" option is false', function(done){
                 var options = {
                     url: '/test/data/hola.json'
                 };
@@ -204,7 +238,7 @@
                     });
             });
 
-            it('should pass extra parameters into resolve/reject callbacks', function(done){
+            it('passes extra parameters into resolve/reject callbacks', function(done){
                 facade.ajax([{'url': '/bonjour' }, 'extra', null, undefined])
                     .spread(function(french, extra, n, u){
                         expect(french.value.message).to.equal("bonjour!");
@@ -214,7 +248,7 @@
                     });
             });
 
-            it('calls can be chained', function(done){
+            it('allows calls to be chained', function(done){
                 facade.ajax({
                     url: '/test/data/hola.json'
                 })
@@ -232,7 +266,7 @@
                 });
             });
 
-            it('should invoke spread callback when calls partially fail', function(done){
+            it('invokes spread callback when calls partially fail', function(done){
                 facade.ajax([{
                     url: '/test/data/hola.json'
                 },{
@@ -242,6 +276,29 @@
                     expect(response1.value.message).to.equal('hola!');
                     expect(response2.state).to.equal('rejected');
                     expect(response2.reason.statusText).to.equal('Not Found');
+                    done();
+                });
+            });
+
+            it('invokes success/error callbacks for requests that receive cached responses', function(done){
+                var callbacks = {
+                    success: sinon.spy(),
+                    error: sinon.spy()
+                };
+                facade.ajax([{
+                    url: '/test/data/hola.json'
+                }, {
+                    url: '/test/data/hola.json',
+                    success: callbacks.success
+                }, {
+                    url: '/bad-url'
+                }, {
+                    url: '/bad-url',
+                    error: callbacks.error
+                }]).done(function(){
+                    expect(callbacks.success.calledOnce).to.be.true;
+                    expect(callbacks.error.calledOnce).to.be.true;
+                    expect(jQuery.ajax.calledTwice).to.be.true;
                     done();
                 });
             });
