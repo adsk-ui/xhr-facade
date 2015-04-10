@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    function factory($, RSVP, sinon) {
+    function factory($, RSVP, sinon, deparam) {
 
         RSVP.Promise.prototype.spread = function(resolve, reject, label) {
             return this.then(function(array) {
@@ -31,6 +31,10 @@
 
         function isArray(obj) {
             return obj instanceof Array;
+        }
+
+        function isFunction(obj){
+            return typeof obj === 'function';
         }
 
         function isRegExp(obj) {
@@ -89,9 +93,9 @@
         }
 
         function XhrFacade(options) {
-            var self = this;
-            var endpoints = this.endpoints = {};
-            var server = sinon.fakeServer.create();
+            var self = this,
+                endpoints = this.endpoints = {},
+                server = sinon.fakeServer.create();
             options = options || {};
             server.autoRespond = true;
             server.xhr.useFilters = true;
@@ -131,29 +135,48 @@
         XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
-        XhrFacade.prototype.create = function(configs) {
-            var configLength,
-                config;
+        XhrFacade.prototype.create = function(method, url, response) {
+            var id;
 
-            configs = isArray(configs) ? configs : configs ? [configs] : [];
-            configLength = configs.length;
-
-            for (var i = 0; i < configLength; i++) {
-                config = configs[i];
-
-                if (!config.url || (!isString(config.url) && !isRegExp(config.url)))
-                    throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
-
-                if (!config.response)
-                    throw new Error(XhrFacade.RESPONSE_REQUIRED);
-
-                config.type = config.type || 'GET';
-                config.id = config.url + '+' + config.type;
-
-                setEndpointOptions(this.endpoints, config.id, config);
-
-                this.server.respondWith(config.type, config.url, config.response);
+            if( arguments.length === 2 ){
+                response = url;
+                url = method;
+                method = 'GET';
             }
+
+            if (!url || (!isString(url) && !isRegExp(url)))
+                throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
+
+            if (!response)
+                throw new Error(XhrFacade.RESPONSE_REQUIRED);
+
+            id = url + '+' + method;
+
+            setEndpointOptions(this.endpoints, id, {
+                type: method,
+                url: url,
+                response: response
+            });
+
+            this.server.respondWith(method, url, !isFunction(response) ? response : function(request){
+                var params = Array.prototype.slice.call(arguments, 1),
+                    query = deparam(request.url.replace(/[^\?]*\?/, ''));
+                // if( method === 'GET' && request.data ){
+                //     query = extend(query, request.data);
+                // }
+                return response({
+                    params: isRegExp(url) ? params : {},
+                    query: query
+                }, {
+                    send: function(payload){
+                        request.respond(payload);
+                    },
+                    json: function(payload){
+                        request.respond(JSON.stringify(payload));
+                    }
+                });
+            });
+
         };
 
         XhrFacade.match = function(a, b){
@@ -232,10 +255,10 @@
         return XhrFacade;
     }
     if (typeof define === 'function' && define.amd) {
-        define(['jquery', 'rsvp', 'sinon'], function() {
+        define(['jquery', 'rsvp', 'sinon', 'deparam'], function() {
             return factory.apply(this, arguments);
         });
     } else if (typeof this !== 'undefined') {
-        this.XhrFacade = factory.call(this, jQuery, RSVP, sinon);
+        this.XhrFacade = factory.call(this, jQuery, RSVP, sinon, deparam);
     }
 }).call(this);

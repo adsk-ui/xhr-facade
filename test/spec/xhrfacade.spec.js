@@ -2,7 +2,6 @@
 
 (function() {
     'use strict';
-
     describe('XhrFacade', function() {
         var facade,
             server,
@@ -12,27 +11,19 @@
         beforeEach(function() {
             sinon.spy(jQuery, 'ajax');
             facade = new XhrFacade();
-            facade.create({
-                'url': '/bonjour',
-                'response': function(request, id){
-                    request.respond(JSON.stringify({
-                        message: 'bonjour!'
-                    }));
-                }
+            facade.create('/bonjour', function(req, res){
+                res.send(JSON.stringify({
+                    message: 'bonjour!'
+                }));
             });
-            facade.create({
-                'url': /\/custom\/([^\?]+)/,
-                'response': function(request, message){
-                    request.respond(JSON.stringify({
-                        message: message,
-                        param: request.getUrlParam('param')
-                    }));
-                }
+            facade.create(/\/custom\/([^\?]+)/, function(req, res){
+                arguments;
+                res.send(JSON.stringify({
+                    message: req.params[0],
+                    param: req.query.param
+                }));
             });
-            facade.create({
-                url: /\/error/,
-                response: [404, null, '']
-            });
+            facade.create(/\/error/, [404, null, '']);
             requestA = {
                 url: 'abc',
                 data: {
@@ -337,40 +328,12 @@
             it('should throw error if url is not provided for endpoint', function(){
                 var err = {};
                 try{
-                    facade.create({'name': 'abc'});
+                    facade.create();
                 }catch(e){
                     err = e;
                 }finally{
                     expect(err.message).to.equal(XhrFacade.ENDPOINT_URL_REQUIRED);
                 }
-            });
-            it('should allow an array as input', function(done){
-                facade.create([{
-                    'url': '/blue',
-                    'response': function(request){
-                        request.respond(JSON.stringify({
-                            message: 'blue!'
-                        }));
-                    }
-                }]);
-                facade.ajax({url:'/blue'}).then(function(response){
-                    expect(response[0].value.message).to.equal('blue!');
-                    done();
-                });
-            });
-            it('should allow an object as input', function(done){
-                facade.create({
-                    'url': '/blue',
-                    'response': function(request){
-                        request.respond(JSON.stringify({
-                            message: 'blue!'
-                        }));
-                    }
-                });
-                facade.ajax({url:'/blue'}).then(function(response){
-                    expect(response[0].value.message).to.equal('blue!');
-                    done();
-                });
             });
 
             it('should allow urls to be specified as regular expressions with capture groups', function(done){
@@ -384,23 +347,15 @@
             });
 
             it('should register seperate default options for each endpoint HTTP method', function(done){
-                facade.create({
-                    'url': '/method-man',
-                    'type': 'GET',
-                    'response': function(request){
-                        request.respond(JSON.stringify({
-                            message: 'you got it'
-                        }));
-                    }
+                facade.create('GET', '/method-man', function(req, res){
+                    res.send(JSON.stringify({
+                        message: 'you got it'
+                    }));
                 });
-                facade.create({
-                    'url': '/method-man',
-                    'type': 'POST',
-                    'response': function(request){
-                        request.respond(JSON.stringify({
-                            message: 'poster boy'
-                        }));
-                    }
+                facade.create('POST', '/method-man', function(req, res){
+                    res.send(JSON.stringify({
+                        message: 'poster boy'
+                    }));
                 });
                 facade.ajax([{
                     'url': '/method-man',
@@ -427,6 +382,40 @@
                     }
                 });
             });
+
+            describe('arguments to callback function', function(){
+                describe('response', function(){
+                    describe('.send()', function(){
+                        it('is a function', function(done){
+                            facade.create('/abc', function(req, res){
+                                expect(res.send).to.be.a('function');
+                                done();
+                            });
+                            $.get('/abc');
+                        });
+                    });
+                    describe('.json()', function(){
+                        it('is a function', function(done){
+                            facade.create('/abc', function(req, res){
+                                expect(res.json).to.be.a('function');
+                                done();
+                            });
+                            $.get('/abc');
+                        });
+                        it('stringifies json input before sending it as response to request', function(done){
+                            facade.create('/abc', function(req, res){
+                                res.json({msg:'hi!'});
+                            });
+                            $.get('/abc').done(function(response){
+                                expect(response.msg).to.equal('hi!');
+                                done();
+                            });
+                        });
+                    });
+                });
+            });
+
+
         });
 
         describe('.destroy()', function(){
