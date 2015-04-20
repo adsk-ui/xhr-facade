@@ -56,26 +56,6 @@
             return obj;
         }
 
-        function getUrlParams(url){
-            var params = url.match(/\?([^#]*)/);
-            // just the params, no ?
-            params = params && params.length && params[1];
-            return params || '';
-        }
-
-        function matchUrlParams(url1, url2){
-            return getUrlParams(url1) === getUrlParams(url2);
-        }
-
-        function matchData(data1, data2){
-            return data1 === data2;
-        }
-
-        function matchOptions(cachedOptions, request){
-            var match = matchUrlParams(cachedOptions.url, request.url);
-            return match && matchData(cachedOptions.data, JSON.stringify(request.data));
-        }
-
         function getEndpointId(url, method){
             return url.replace(/\?.*/, '') + '+' + method;
         }
@@ -87,25 +67,19 @@
 
         function setEndpointOptions(endpoints, id, options) {
             var endpoint = endpoints[id] || {};
-            endpoint.options = {
-                url: options.url,
-                data: JSON.stringify(options.data),
-                response: options.response
-            };
+            endpoint.options = options;
             endpoints[id] = endpoint;
         }
 
-        function getEndpointCache(endpoints, id, request) {
+        function getEndpointCache(endpoints, id, requestOptions, match) {
             var endpoint = endpoints[id] || {},
-                endpointOptions = endpoint.options || {},
-                endpointCache = endpoint.cache,
-                match;
+                cachedOptions = endpoint.options || {},
+                cache = endpoint.cache;
 
-            if (!endpointCache)
+            if (!cache)
                 return null;
 
-            match = matchOptions(endpointOptions, request);
-            return match ? endpointCache : null;
+            return match(requestOptions, cachedOptions) ? cache : null;
         }
 
         function setEndpointCache(endpoints, id, cache) {
@@ -157,29 +131,33 @@
         XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
-        XhrFacade.prototype.create = function(config) {
+        XhrFacade.prototype.create = function(configs) {
             var configLength,
-                options;
+                config;
 
-            config = isArray(config) ? config : config ? [config] : [];
-            configLength = config.length;
+            configs = isArray(configs) ? configs : configs ? [configs] : [];
+            configLength = configs.length;
 
             for (var i = 0; i < configLength; i++) {
-                options = config[i];
+                config = configs[i];
 
-                if (!options.url || (!isString(options.url) && !isRegExp(options.url)))
+                if (!config.url || (!isString(config.url) && !isRegExp(config.url)))
                     throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
 
-                if (!options.response)
+                if (!config.response)
                     throw new Error(XhrFacade.RESPONSE_REQUIRED);
 
-                options.type = options.type || 'GET';
-                options.id = options.url + '+' + options.type;
+                config.type = config.type || 'GET';
+                config.id = config.url + '+' + config.type;
 
-                setEndpointOptions(this.endpoints, options.id, options);
+                setEndpointOptions(this.endpoints, config.id, config);
 
-                this.server.respondWith(options.type, options.url, options.response);
+                this.server.respondWith(config.type, config.url, config.response);
             }
+        };
+
+        XhrFacade.match = function(a, b){
+            return a.url === b.url && JSON.stringify(a.data) === JSON.stringify(b.data);
         };
 
         XhrFacade.prototype.ajax = function(requests, options) {
@@ -188,12 +166,16 @@
                 requestsLength,
                 request,
                 cache,
+                defaults,
                 settings;
 
-            settings = extend({
+            defaults = {
                 proxyTo: $.ajax,
-                aggregator: RSVP.allSettled
-            }, options);
+                aggregator: RSVP.allSettled,
+                match: XhrFacade.match
+            };
+
+            settings = extend(defaults, options);
 
             requests = !requests ? [] : isArray(requests) ? requests : [requests];
             requestsLength = requests.length;
@@ -207,10 +189,14 @@
                     request.cache = isBoolean(request.cache) ? request.cache : true;
 
                     if (request.cache)
-                        cache = getEndpointCache(this.endpoints, request.id, request);
+                        cache = getEndpointCache(this.endpoints, request.id, request, settings.match);
 
                     if (cache) {
                         deferred = cache;
+                        if(typeof request.success === 'function')
+                            deferred.done(request.success);
+                        if(typeof request.error === 'function')
+                            deferred.fail(request.error);
                     } else {
                         deferred = settings.proxyTo(request);
                         setEndpointCache(this.endpoints, request.id, deferred);
@@ -229,6 +215,9 @@
         XhrFacade.prototype.destroy = function() {
             this.server.restore();
             this.server.xhr.filters = [];
+            this.endpoints = {};
+            if(this === singleton)
+                singleton = null;
         };
 
 

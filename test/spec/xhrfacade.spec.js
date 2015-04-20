@@ -441,6 +441,11 @@
                 facade.destroy();
                 expect(sinon.FakeXMLHttpRequest.filters.length).to.equal(0);
             });
+            it('should nullify the singleton', function(){
+                var singleton = XhrFacade.getInstance();
+                singleton.destroy();
+                expect(singleton == XhrFacade.getInstance()).to.be.false;
+            });
         });
     });
 })();
