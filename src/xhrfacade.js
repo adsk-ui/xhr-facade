@@ -1,5 +1,6 @@
 (function() {
     'use strict';
+
     function factory($, RSVP, sinon, deparam) {
 
         RSVP.Promise.prototype.spread = function(resolve, reject, label) {
@@ -8,16 +9,16 @@
             }, reject, label);
         };
 
-        RSVP.Promise.prototype.done = function(){
+        RSVP.Promise.prototype.done = function() {
             var callbacks = Array.prototype.slice.call(arguments);
-            for(var i = 0; i < callbacks.length; i++ )
+            for (var i = 0; i < callbacks.length; i++)
                 this.then(callbacks[i]);
             return this;
         };
 
-        RSVP.Promise.prototype.always = function(){
+        RSVP.Promise.prototype.always = function() {
             var callbacks = Array.prototype.slice.call(arguments);
-            for(var i = 0; i < callbacks.length; i++ ){
+            for (var i = 0; i < callbacks.length; i++) {
                 this.then(callbacks[i], callbacks[i]);
             }
             return this;
@@ -33,7 +34,7 @@
             return obj instanceof Array;
         }
 
-        function isFunction(obj){
+        function isFunction(obj) {
             return typeof obj === 'function';
         }
 
@@ -60,7 +61,7 @@
             return obj;
         }
 
-        function getEndpointId(url, method){
+        function getEndpointId(url, method) {
             return url.replace(/\?.*/, '') + '+' + method;
         }
 
@@ -99,9 +100,6 @@
             options = options || {};
             server.autoRespond = true;
             server.xhr.useFilters = true;
-            server.xhr.defaultHeaders = options.defaultHeaders || {
-                'Content-Type': 'application/json'
-            };
             /**
              * Add filter to allow requests to real REST endpoints
              * to pass through sinon untouched.
@@ -136,9 +134,11 @@
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
         XhrFacade.prototype.create = function(method, url, response) {
-            var id;
+            var endpointId,
+                urlParamKeys;
 
-            if( arguments.length === 2 ){
+
+            if (arguments.length === 2) {
                 response = url;
                 url = method;
                 method = 'GET';
@@ -150,15 +150,24 @@
             if (!response)
                 throw new Error(XhrFacade.RESPONSE_REQUIRED);
 
-            id = url + '+' + method;
+            endpointId = url + '+' + method;
 
-            setEndpointOptions(this.endpoints, id, {
+            if(isString(url)){
+                urlParamKeys = url.match(/:\w+/g);
+                url = url.replace(/:\w+/g, '\\w+').replace(/\)/g, ')?');
+            }
+
+
+            url = new RegExp(url);
+
+
+            setEndpointOptions(this.endpoints, endpointId, {
                 type: method,
                 url: url,
                 response: response
             });
 
-            this.server.respondWith(method, url, !isFunction(response) ? response : function(request){
+            this.server.respondWith(method, url, !isFunction(response) ? response : function(request) {
                 var params = Array.prototype.slice.call(arguments, 1),
                     query = deparam(request.url.replace(/[^\?]*\?/, ''));
                 // if( method === 'GET' && request.data ){
@@ -168,18 +177,22 @@
                     params: isRegExp(url) ? params : {},
                     query: query
                 }, {
-                    send: function(payload){
-                        request.respond(payload);
+                    send: function(payload) {
+                        request.respond(200, {
+                            'Content-Type': 'text/plain',
+                        }, payload);
                     },
-                    json: function(payload){
-                        request.respond(JSON.stringify(payload));
+                    json: function(payload) {
+                        request.respond(200, {
+                            'Content-Type': 'application/json'
+                        }, JSON.stringify(payload));
                     }
                 });
             });
 
         };
 
-        XhrFacade.match = function(a, b){
+        XhrFacade.match = function(a, b) {
             return a.url === b.url && JSON.stringify(a.data) === JSON.stringify(b.data);
         };
 
@@ -216,9 +229,9 @@
 
                     if (cache) {
                         deferred = cache;
-                        if(typeof request.success === 'function')
+                        if (typeof request.success === 'function')
                             deferred.done(request.success);
-                        if(typeof request.error === 'function')
+                        if (typeof request.error === 'function')
                             deferred.fail(request.error);
                     } else {
                         deferred = settings.proxyTo(request);
@@ -247,7 +260,7 @@
          */
         var singleton;
 
-        XhrFacade.getInstance = function(){
+        XhrFacade.getInstance = function() {
             singleton = singleton || new XhrFacade();
             return singleton;
         };

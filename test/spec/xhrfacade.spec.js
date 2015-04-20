@@ -12,16 +12,15 @@
             sinon.spy(jQuery, 'ajax');
             facade = new XhrFacade();
             facade.create('/bonjour', function(req, res){
-                res.send(JSON.stringify({
+                res.json({
                     message: 'bonjour!'
-                }));
+                });
             });
             facade.create(/\/custom\/([^\?]+)/, function(req, res){
-                arguments;
-                res.send(JSON.stringify({
+                res.json({
                     message: req.params[0],
                     param: req.query.param
-                }));
+                });
             });
             facade.create(/\/error/, [404, null, '']);
             requestA = {
@@ -176,6 +175,10 @@
                         expect(second[0].value.message).to.equal('hola!');
                         expect(jQuery.ajax.calledTwice).to.be.true;
                         done();
+                    })
+                    ['catch'](function(a){
+                        arguments;
+                        console.error(a);
                     });
             });
 
@@ -189,6 +192,9 @@
                     expect(second[0].value.message).to.equal('two');
                     expect(jQuery.ajax.callCount).to.equal(2);
                     done();
+                })
+                ['catch'](function(){
+                    arguments;
                 });
             });
 
@@ -348,14 +354,14 @@
 
             it('should register seperate default options for each endpoint HTTP method', function(done){
                 facade.create('GET', '/method-man', function(req, res){
-                    res.send(JSON.stringify({
+                    res.json({
                         message: 'you got it'
-                    }));
+                    });
                 });
                 facade.create('POST', '/method-man', function(req, res){
-                    res.send(JSON.stringify({
+                    res.json({
                         message: 'poster boy'
-                    }));
+                    });
                 });
                 facade.ajax([{
                     'url': '/method-man',
@@ -383,7 +389,31 @@
                 });
             });
 
-            describe('arguments to callback function', function(){
+            describe('arguments to handler (request, response)', function(){
+                describe('request.params', function(){
+                    describe('when route definition is a regular expression', function(){
+                        it('is an array containing capture groups', function(done){
+                            facade.create('GET', /a\/(.*)\/(.*)\/?(.*)/, function(req){
+                                expect(req.params.length).to.equal(3);
+                                expect(req.params[0]).to.equal('b');
+                                expect(req.params[1]).to.equal('c');
+                                expect(req.params[2]).to.equal('');
+                                done();
+                            });
+                            $.ajax({url: '/a/b/c'});
+                        });
+                    });
+                    describe('when route definition is a path pattern', function(){
+                        it('is an object containing properties mapped the named route "parameters"', function(done){
+                            facade.create('GET', '/1/:b/:c', function(req){
+                                expect(req.b).to.equal('2');
+                                expect(req.c).to.equal('3');
+                                done();
+                            });
+                            $.ajax({url: '/1/2/3'});
+                        });
+                    });
+                });
                 describe('response', function(){
                     describe('.send()', function(){
                         it('is a function', function(done){
@@ -392,6 +422,15 @@
                                 done();
                             });
                             $.get('/abc');
+                        });
+                        it('sends raw text input as response to request', function(done){
+                            facade.create('/abc', function(req, res){
+                                res.send('hi!');
+                            });
+                            $.get('/abc').done(function(response){
+                                expect(response).to.equal('hi!');
+                                done();
+                            });
                         });
                     });
                     describe('.json()', function(){
@@ -417,7 +456,6 @@
 
 
         });
-
         describe('.destroy()', function(){
             it('should be a function', function(){
                 expect(facade.destroy).to.be.a('function');
