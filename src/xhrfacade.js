@@ -80,6 +80,7 @@
             var endpoint = endpoints[id] || {};
             endpoint.options = options;
             endpoints[id] = endpoint;
+            return endpoint;
         }
 
         function getEndpointCache(endpoints, id, requestOptions, match) {
@@ -139,6 +140,13 @@
         XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
+        /**
+         * Creates a new vitual XHR endpoint.
+         * @param  {String} method   The HTTP method for this endpoint; defaults to GET if omitted
+         * @param  {String|RegExp} url      XHR calls to this URL will be intercepted by the facade.
+         * @param  {Function} response The handler that will be invoked when this endpoint is requested.
+         * @return {[type]}          [description]
+         */
         XhrFacade.prototype.create = function(method, url, response) {
             var self = this,
                 endpointId,
@@ -164,15 +172,7 @@
                 url = url.replace(/:\w+/g, '(\\w+)').replace(/\)/g, ')?');
             }
 
-
             url = new RegExp(url);
-
-
-            setEndpointOptions(this.endpoints, endpointId, {
-                type: method,
-                url: url,
-                response: response
-            });
 
             this.server.respondWith(method, url, !isFunction(response) ? response : function(request) {
                 var captureGroups = Array.prototype.slice.call(arguments, 1),
@@ -206,6 +206,11 @@
                 });
             });
 
+            return setEndpointOptions(this.endpoints, endpointId, {
+                    type: method,
+                    url: url,
+                    response: response
+                });
         };
 
         XhrFacade.match = function(a, b) {
