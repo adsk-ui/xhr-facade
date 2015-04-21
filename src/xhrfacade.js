@@ -100,10 +100,17 @@
             endpoints[id] = endpoint;
         }
 
+        /**
+         * XhrFacade constructor function. Creates a sinon fake server
+         * which overrides the browser's native global XMLHttpRequest object so
+         * that XHRs can be intercepted and responded to client-side.
+         * @param {[type]} options [description]
+         */
         function XhrFacade(options) {
             var self = this,
                 endpoints = this.endpoints = {},
                 server = sinon.fakeServer.create();
+
             options = options || {};
             server.autoRespond = true;
             server.xhr.useFilters = true;
@@ -213,10 +220,25 @@
                 });
         };
 
+        /**
+         * The default algorithm for testing whether to respond to a request
+         * with a previously cached payload. Basically, if the URL params or request
+         * payload are different, make a fresh call. This is intended to be overriden
+         * to meet domain-specific requirements.
+         * @param  {Object} a The Ajax settings representing the request
+         * @param  {Object} b The Ajax settings representing the previous request to this endpoint.
+         * @return {Boolean}   If true, a cached response from the previous request will be used to respond to the current request.
+         */
         XhrFacade.match = function(a, b) {
             return a.url === b.url && JSON.stringify(a.data) === JSON.stringify(b.data);
         };
 
+        /**
+         * Makes AJAX requests, proxying to jQuery.ajax by default
+         * @param  {Object} requests An object (or array of objects) representing jQuery Ajax request settings
+         * @param  {Object} options  Can be used to override default settings for the request(s)
+         * @return {RSVP.Promise}          A promise that resolves once all requested calls resolve.
+         */
         XhrFacade.prototype.ajax = function(requests, options) {
             var deferreds = [],
                 deferred,
@@ -269,15 +291,19 @@
             return settings.aggregator(deferreds);
         };
 
+        /**
+         * Restores the browser's normal XMLHttpRequest object which allows
+         * all XHRs to pass through to the server.
+         * @return {[type]} [description]
+         */
         XhrFacade.prototype.destroy = function() {
             this.server.restore();
             this.server.xhr.filters = [];
         };
 
-
         /**
-         * Static API
-         * --------------------------------
+         * Static method used to retreive a singleton instance of XhrFacade
+         * @return {XhrFacade} The singleton instance.
          */
         var singleton;
 
