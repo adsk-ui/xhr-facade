@@ -1,6 +1,7 @@
 (function() {
     'use strict';
-    function factory($, RSVP, sinon) {
+
+    function factory($, RSVP, sinon, deparam) {
 
         RSVP.Promise.prototype.spread = function(resolve, reject, label) {
             return this.then(function(array) {
@@ -8,16 +9,16 @@
             }, reject, label);
         };
 
-        RSVP.Promise.prototype.done = function(){
+        RSVP.Promise.prototype.done = function() {
             var callbacks = Array.prototype.slice.call(arguments);
-            for(var i = 0; i < callbacks.length; i++ )
+            for (var i = 0; i < callbacks.length; i++)
                 this.then(callbacks[i]);
             return this;
         };
 
-        RSVP.Promise.prototype.always = function(){
+        RSVP.Promise.prototype.always = function() {
             var callbacks = Array.prototype.slice.call(arguments);
-            for(var i = 0; i < callbacks.length; i++ ){
+            for (var i = 0; i < callbacks.length; i++) {
                 this.then(callbacks[i], callbacks[i]);
             }
             return this;
@@ -31,6 +32,10 @@
 
         function isArray(obj) {
             return obj instanceof Array;
+        }
+
+        function isFunction(obj) {
+            return typeof obj === 'function';
         }
 
         function isRegExp(obj) {
@@ -56,27 +61,13 @@
             return obj;
         }
 
-        function getUrlParams(url){
-            var params = url.match(/\?([^#]*)/);
-            // just the params, no ?
-            params = params && params.length && params[1];
-            return params || '';
+        function bind(f, _this){
+            return function(){
+                return f.apply(_this, arguments);
+            }
         }
 
-        function matchUrlParams(url1, url2){
-            return getUrlParams(url1) === getUrlParams(url2);
-        }
-
-        function matchData(data1, data2){
-            return data1 === data2;
-        }
-
-        function matchOptions(cachedOptions, request){
-            var match = matchUrlParams(cachedOptions.url, request.url);
-            return match && matchData(cachedOptions.data, JSON.stringify(request.data));
-        }
-
-        function getEndpointId(url, method){
+        function getEndpointId(url, method) {
             return url.replace(/\?.*/, '') + '+' + method;
         }
 
@@ -87,25 +78,20 @@
 
         function setEndpointOptions(endpoints, id, options) {
             var endpoint = endpoints[id] || {};
-            endpoint.options = {
-                url: options.url,
-                data: JSON.stringify(options.data),
-                response: options.response
-            };
+            endpoint.options = options;
             endpoints[id] = endpoint;
+            return endpoint;
         }
 
-        function getEndpointCache(endpoints, id, request) {
+        function getEndpointCache(endpoints, id, requestOptions, match) {
             var endpoint = endpoints[id] || {},
-                endpointOptions = endpoint.options || {},
-                endpointCache = endpoint.cache,
-                match;
+                cachedOptions = endpoint.options || {},
+                cache = endpoint.cache;
 
-            if (!endpointCache)
+            if (!cache)
                 return null;
 
-            match = matchOptions(endpointOptions, request);
-            return match ? endpointCache : null;
+            return match(requestOptions, cachedOptions) ? cache : null;
         }
 
         function setEndpointCache(endpoints, id, cache) {
@@ -114,16 +100,20 @@
             endpoints[id] = endpoint;
         }
 
+        /**
+         * XhrFacade constructor function. Creates a sinon fake server
+         * which overrides the browser's native global XMLHttpRequest object so
+         * that XHRs can be intercepted and responded to client-side.
+         * @param {[type]} options [description]
+         */
         function XhrFacade(options) {
-            var self = this;
-            var endpoints = this.endpoints = {};
-            var server = sinon.fakeServer.create();
+            var self = this,
+                endpoints = this.endpoints = {},
+                server = sinon.fakeServer.create();
+
             options = options || {};
             server.autoRespond = true;
             server.xhr.useFilters = true;
-            server.xhr.defaultHeaders = options.defaultHeaders || {
-                'Content-Type': 'application/json'
-            };
             /**
              * Add filter to allow requests to real REST endpoints
              * to pass through sinon untouched.
@@ -157,43 +147,114 @@
         XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
-        XhrFacade.prototype.create = function(config) {
-            var configLength,
-                options;
+        /**
+         * Creates a new vitual XHR endpoint.
+         * @param  {String} method   The HTTP method for this endpoint; defaults to GET if omitted
+         * @param  {String|RegExp} url      XHR calls to this URL will be intercepted by the facade.
+         * @param  {Function} response The handler that will be invoked when this endpoint is requested.
+         * @return {[type]}          [description]
+         */
+        XhrFacade.prototype.create = function(method, url, response) {
+            var self = this,
+                endpointId,
+                urlParamKeys;
 
-            config = isArray(config) ? config : config ? [config] : [];
-            configLength = config.length;
 
-            for (var i = 0; i < configLength; i++) {
-                options = config[i];
-
-                if (!options.url || (!isString(options.url) && !isRegExp(options.url)))
-                    throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
-
-                if (!options.response)
-                    throw new Error(XhrFacade.RESPONSE_REQUIRED);
-
-                options.type = options.type || 'GET';
-                options.id = options.url + '+' + options.type;
-
-                setEndpointOptions(this.endpoints, options.id, options);
-
-                this.server.respondWith(options.type, options.url, options.response);
+            if (arguments.length === 2) {
+                response = url;
+                url = method;
+                method = 'GET';
             }
+
+            if (!url || (!isString(url) && !isRegExp(url)))
+                throw new Error(XhrFacade.ENDPOINT_URL_REQUIRED);
+
+            if (!response)
+                throw new Error(XhrFacade.RESPONSE_REQUIRED);
+
+            endpointId = url + '+' + method;
+
+            if(isString(url)){
+                urlParamKeys = url.match(/:\w+/g);
+                url = url.replace(/:\w+/g, '(\\w+)').replace(/\)/g, ')?');
+            }
+
+            url = new RegExp(url);
+
+            this.server.respondWith(method, url, !isFunction(response) ? response : function(request) {
+                var captureGroups = Array.prototype.slice.call(arguments, 1),
+                    query = deparam(request.url.replace(/[^\?]*\?/, '')),
+                    params;
+
+                if(urlParamKeys && captureGroups.length){
+                    params = {};
+                    for(var i =0; i < urlParamKeys.length; i++)
+                        params[urlParamKeys[i].slice(1)] = captureGroups[i];
+                }else{
+                    params = Array.prototype.slice.call(arguments, 1);
+                }
+
+                return response({
+                    params: params || {},
+                    query: query,
+                    cache: !query._,
+                    ajax: bind(self.ajax, self)
+                }, {
+                    send: function(payload) {
+                        request.respond(200, {
+                            'Content-Type': 'text/plain',
+                        }, payload);
+                    },
+                    json: function(payload) {
+                        request.respond(200, {
+                            'Content-Type': 'application/json'
+                        }, JSON.stringify(payload));
+                    }
+                });
+            });
+
+            return setEndpointOptions(this.endpoints, endpointId, {
+                    type: method,
+                    url: url,
+                    response: response
+                });
         };
 
+        /**
+         * The default algorithm for testing whether to respond to a request
+         * with a previously cached payload. Basically, if the URL params or request
+         * payload are different, make a fresh call. This is intended to be overriden
+         * to meet domain-specific requirements.
+         * @param  {Object} a The Ajax settings representing the request
+         * @param  {Object} b The Ajax settings representing the previous request to this endpoint.
+         * @return {Boolean}   If true, a cached response from the previous request will be used to respond to the current request.
+         */
+        XhrFacade.match = function(a, b) {
+            return a.url === b.url && JSON.stringify(a.data) === JSON.stringify(b.data);
+        };
+
+        /**
+         * Makes AJAX requests, proxying to jQuery.ajax by default
+         * @param  {Object} requests An object (or array of objects) representing jQuery Ajax request settings
+         * @param  {Object} options  Can be used to override default settings for the request(s)
+         * @return {RSVP.Promise}          A promise that resolves once all requested calls resolve.
+         */
         XhrFacade.prototype.ajax = function(requests, options) {
             var deferreds = [],
                 deferred,
                 requestsLength,
                 request,
                 cache,
+                defaults,
                 settings;
 
-            settings = extend({
+            defaults = {
                 proxyTo: $.ajax,
-                aggregator: RSVP.allSettled
-            }, options);
+                aggregator: RSVP.allSettled,
+                match: XhrFacade.match
+            };
+
+            settings = extend(defaults, options);
 
             requests = !requests ? [] : isArray(requests) ? requests : [requests];
             requestsLength = requests.length;
@@ -207,10 +268,14 @@
                     request.cache = isBoolean(request.cache) ? request.cache : true;
 
                     if (request.cache)
-                        cache = getEndpointCache(this.endpoints, request.id, request);
+                        cache = getEndpointCache(this.endpoints, request.id, request, settings.match);
 
                     if (cache) {
                         deferred = cache;
+                        if (typeof request.success === 'function')
+                            deferred.done(request.success);
+                        if (typeof request.error === 'function')
+                            deferred.fail(request.error);
                     } else {
                         deferred = settings.proxyTo(request);
                         setEndpointCache(this.endpoints, request.id, deferred);
@@ -226,19 +291,23 @@
             return settings.aggregator(deferreds);
         };
 
+        /**
+         * Restores the browser's normal XMLHttpRequest object which allows
+         * all XHRs to pass through to the server.
+         * @return {[type]} [description]
+         */
         XhrFacade.prototype.destroy = function() {
             this.server.restore();
             this.server.xhr.filters = [];
         };
 
-
         /**
-         * Static API
-         * --------------------------------
+         * Static method used to retreive a singleton instance of XhrFacade
+         * @return {XhrFacade} The singleton instance.
          */
         var singleton;
 
-        XhrFacade.getInstance = function(){
+        XhrFacade.getInstance = function() {
             singleton = singleton || new XhrFacade();
             return singleton;
         };
@@ -246,10 +315,10 @@
         return XhrFacade;
     }
     if (typeof define === 'function' && define.amd) {
-        define(['jquery', 'rsvp', 'sinon'], function() {
+        define(['jquery', 'rsvp', 'sinon', 'deparam'], function() {
             return factory.apply(this, arguments);
         });
     } else if (typeof this !== 'undefined') {
-        this.XhrFacade = factory.call(this, jQuery, RSVP, sinon);
+        this.XhrFacade = factory.call(this, jQuery, RSVP, sinon, deparam);
     }
 }).call(this);
