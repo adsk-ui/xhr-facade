@@ -61,6 +61,12 @@
             return obj;
         }
 
+        function bind(f, _this){
+            return function(){
+                return f.apply(_this, arguments);
+            }
+        }
+
         function getEndpointId(url, method) {
             return url.replace(/\?.*/, '') + '+' + method;
         }
@@ -134,7 +140,8 @@
         XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
         XhrFacade.prototype.create = function(method, url, response) {
-            var endpointId,
+            var self = this,
+                endpointId,
                 urlParamKeys;
 
 
@@ -182,7 +189,9 @@
 
                 return response({
                     params: params || {},
-                    query: query
+                    query: query,
+                    cache: !query._,
+                    ajax: bind(self.ajax, self)
                 }, {
                     send: function(payload) {
                         request.respond(200, {

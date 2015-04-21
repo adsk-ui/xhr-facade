@@ -414,6 +414,49 @@
                         });
                     });
                 });
+                describe('request.query', function(){
+                    it('is an key/value representation of the query parameters in the request', function(done){
+                        facade.create('/a/b', function(req, res){
+                            expect(req.query.r).to.equal('s');
+                            expect(req.query.t).to.equal('u');
+                            done();
+                        });
+                        $.get('/a/b?r=s&t=u');
+                    });
+                });
+                describe('request.cache', function(){
+                    it("is true when cache setting of ajax request is true", function(done){
+                        facade.create('/a/b', function(req, res){
+                            expect(req.cache).to.be.true;
+                            done();
+                        });
+                        $.ajax({
+                            url: '/a/b'
+                        });
+                    });
+                    it("is false when cache setting of ajax request is false", function(done){
+                        facade.create('/a/b', function(req, res){
+                            expect(req.cache).to.be.false;
+                            done();
+                        });
+                        $.ajax({
+                            url: '/a/b',
+                            cache: false
+                        });
+                    });
+                });
+                describe('request.ajax()', function(){
+                    it("acts as a proxy to facade.ajax()", function(done){
+                        sinon.spy(facade, 'ajax');
+                        facade.create('/a/b', function(req, res){
+                            req.ajax('hello');
+                            expect(facade.ajax.calledOnce).to.be.true;
+                            expect(facade.ajax.calledWith('hello')).to.be.true;
+                            done();
+                        });
+                        $.get('/a/b');
+                    });
+                });
                 describe('response', function(){
                     describe('.send()', function(){
                         it('is a function', function(done){
