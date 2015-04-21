@@ -154,7 +154,7 @@
 
             if(isString(url)){
                 urlParamKeys = url.match(/:\w+/g);
-                url = url.replace(/:\w+/g, '\\w+').replace(/\)/g, ')?');
+                url = url.replace(/:\w+/g, '(\\w+)').replace(/\)/g, ')?');
             }
 
 
@@ -168,13 +168,20 @@
             });
 
             this.server.respondWith(method, url, !isFunction(response) ? response : function(request) {
-                var params = Array.prototype.slice.call(arguments, 1),
-                    query = deparam(request.url.replace(/[^\?]*\?/, ''));
-                // if( method === 'GET' && request.data ){
-                //     query = extend(query, request.data);
-                // }
+                var captureGroups = Array.prototype.slice.call(arguments, 1),
+                    query = deparam(request.url.replace(/[^\?]*\?/, '')),
+                    params;
+
+                if(urlParamKeys && captureGroups.length){
+                    params = {};
+                    for(var i =0; i < urlParamKeys.length; i++)
+                        params[urlParamKeys[i].slice(1)] = captureGroups[i];
+                }else{
+                    params = Array.prototype.slice.call(arguments, 1);
+                }
+
                 return response({
-                    params: isRegExp(url) ? params : {},
+                    params: params || {},
                     query: query
                 }, {
                     send: function(payload) {

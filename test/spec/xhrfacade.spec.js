@@ -406,8 +406,8 @@
                     describe('when route definition is a path pattern', function(){
                         it('is an object containing properties mapped the named route "parameters"', function(done){
                             facade.create('GET', '/1/:b/:c', function(req){
-                                expect(req.b).to.equal('2');
-                                expect(req.c).to.equal('3');
+                                expect(req.params.b).to.equal('2');
+                                expect(req.params.c).to.equal('3');
                                 done();
                             });
                             $.ajax({url: '/1/2/3'});
