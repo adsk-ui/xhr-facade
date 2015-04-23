@@ -67,37 +67,31 @@
             }
         }
 
-        function getEndpointId(url, method) {
-            return url.replace(/\?.*/, '') + '+' + method;
+        function getEndpoint(endpoints, request) {
+            var i = 0,
+                l = endpoints.length,
+                endpoint;
+            for( ; i < l; i++){
+                endpoint = endpoints[i];
+                if(endpoint.type === request.type && endpoint.url.exec(baseUrl(request.url)))
+                    return endpoints[i];
+            }
+            return null;
         }
 
-        function getEndpointOptions(endpoints, id) {
-            var endpoint = endpoints[id];
-            return endpoint && endpoint.options || {};
-        }
-
-        function setEndpointOptions(endpoints, id, options) {
-            var endpoint = endpoints[id] || {};
-            endpoint.options = options;
-            endpoints[id] = endpoint;
+        function setEndpoint(endpoints, endpoint){
+            endpoints.push(endpoint);
             return endpoint;
         }
 
-        function getEndpointCache(endpoints, id, requestOptions, match) {
-            var endpoint = endpoints[id] || {},
-                cachedOptions = endpoint.options || {},
-                cache = endpoint.cache;
-
-            if (!cache)
-                return null;
-
-            return match(requestOptions, cachedOptions) ? cache : null;
+        function useCachedResponse(endpoint, request, match){
+            if(!request.cache)
+                return false;
+            return !!(endpoint && match(endpoint.previousRequest, request));
         }
 
-        function setEndpointCache(endpoints, id, cache) {
-            var endpoint = endpoints[id] || {};
-            endpoint.cache = cache;
-            endpoints[id] = endpoint;
+        function baseUrl(url){
+            return url.replace(/\?.*/, '');
         }
 
         /**
@@ -108,12 +102,13 @@
          */
         function XhrFacade(options) {
             var self = this,
-                endpoints = this.endpoints = {},
+                endpoints = this.endpoints = [],
                 server = sinon.fakeServer.create();
 
             options = options || {};
             server.autoRespond = true;
             server.xhr.useFilters = true;
+
             /**
              * Add filter to allow requests to real REST endpoints
              * to pass through sinon untouched.
@@ -122,18 +117,20 @@
                 return (function(method, requestedUrl) {
                     var intercept = false,
                         endpoints = this.endpoints,
-                        endpoint;
-                    for (var name in endpoints) {
-                        endpoint = endpoints[name];
-                        if (!endpoint.options.response)
+                        endpointsL = endpoints.length,
+                        endpoint,
+                        i = 0;
+                    for ( ; i < endpointsL; i++) {
+                        endpoint = endpoints[i];
+                        if (!endpoint.response)
                             continue;
-                        if (endpoint.options.url.toString() === requestedUrl.toString()) {
-                            intercept = true;
-                        } else if (isRegExp(endpoint.options.url) && isString(requestedUrl)) {
-                            intercept = endpoint.options.url.exec(requestedUrl);
-                        } else {
-                            intercept = endpoint.options.url === /[^?]+/.exec(requestedUrl);
-                        }
+
+                        intercept = !!endpoint.url.exec(baseUrl(requestedUrl));
+                        // if (endpoint.url.exec(baseUrl(requestedUrl))) {
+                        //     intercept = endpoint.options.url.exec(requestedUrl);
+                        // } else {
+                        //     intercept = endpoint.options.url === /[^?]+/.exec(requestedUrl);
+                        // }
                         if (intercept)
                             break;
                     }
@@ -156,7 +153,6 @@
          */
         XhrFacade.prototype.create = function(method, url, response) {
             var self = this,
-                endpointId,
                 urlParamKeys;
 
 
@@ -172,7 +168,6 @@
             if (!response)
                 throw new Error(XhrFacade.RESPONSE_REQUIRED);
 
-            endpointId = url + '+' + method;
 
             if(isString(url)){
                 urlParamKeys = url.match(/:\w+/g);
@@ -213,7 +208,7 @@
                 });
             });
 
-            return setEndpointOptions(this.endpoints, endpointId, {
+            return setEndpoint(this.endpoints, {
                     type: method,
                     url: url,
                     response: response
@@ -229,8 +224,16 @@
          * @param  {Object} b The Ajax settings representing the previous request to this endpoint.
          * @return {Boolean}   If true, a cached response from the previous request will be used to respond to the current request.
          */
-        XhrFacade.match = function(a, b) {
-            return a.url === b.url && JSON.stringify(a.data) === JSON.stringify(b.data);
+        XhrFacade.match = function(previousRequest, request) {
+            var urlsMatch,
+                dataMatch;
+
+            if(!previousRequest)
+                return false;
+
+            urlsMatch = previousRequest.url === request.url,
+            dataMatch = JSON.stringify(previousRequest.data) === JSON.stringify(request.data);
+            return urlsMatch && dataMatch;
         };
 
         /**
@@ -244,9 +247,11 @@
                 deferred,
                 requestsLength,
                 request,
-                cache,
+                endpoint,
+                useCache,
                 defaults,
                 settings;
+
 
             defaults = {
                 proxyTo: $.ajax,
@@ -264,22 +269,27 @@
 
                 if (request && request.url) {
                     request.type = request.type || 'GET';
-                    request.id = getEndpointId(request.url, request.type);
                     request.cache = isBoolean(request.cache) ? request.cache : true;
 
-                    if (request.cache)
-                        cache = getEndpointCache(this.endpoints, request.id, request, settings.match);
+                    endpoint = getEndpoint(this.endpoints, request);
 
-                    if (cache) {
-                        deferred = cache;
+                    useCache = useCachedResponse(endpoint, request, settings.match);
+
+                    if (endpoint && endpoint.cache && useCache) {
+                        endpoint.previousRequest = request;
+                        deferred = endpoint.cache;
                         if (typeof request.success === 'function')
                             deferred.done(request.success);
                         if (typeof request.error === 'function')
                             deferred.fail(request.error);
                     } else {
                         deferred = settings.proxyTo(request);
-                        setEndpointCache(this.endpoints, request.id, deferred);
-                        setEndpointOptions(this.endpoints, request.id, request);
+                        setEndpoint(this.endpoints, {
+                            type: request.type,
+                            url: new RegExp(baseUrl(request.url)),
+                            cache: deferred,
+                            previousRequest: request
+                        });
                     }
                 } else {
                     deferred = request;
