@@ -21,7 +21,8 @@
   "dependencies": {
     "sinon": "https://github.com/adsk-ui/sinon.git#adsk_v1.12.5",
     "rsvp": "3.0.13",
-    "jquery": "1.9.0"
+    "jquery": "1.9.0",
+    "jquery-deparam": "~0.3.0"
   },
   "overrides": {
     "sinon": {
