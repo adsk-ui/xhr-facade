@@ -309,6 +309,9 @@
         XhrFacade.prototype.destroy = function() {
             this.server.restore();
             this.server.xhr.filters = [];
+            this.endpoints = [];
+            if(this === singleton)
+                singleton = null;
         };
 
         /**
