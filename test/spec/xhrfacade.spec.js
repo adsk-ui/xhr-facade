@@ -323,6 +323,13 @@
                 });
             });
 
+            it('updates existing endpoint after making fresh call', function(){
+                facade.destroy();
+                facade = new XhrFacade();
+                facade.ajax({url: '/abc'});
+                facade.ajax({url: '/abc?msg=hi'});
+                expect(facade.endpoints.length).to.equal(1);
+            });
         });
 
         describe('.create()', function() {
