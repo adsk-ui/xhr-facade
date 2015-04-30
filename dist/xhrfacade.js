@@ -85,9 +85,9 @@
         }
 
         function useCachedResponse(endpoint, request, match){
-            if(!request.cache)
+            if(!endpoint || !endpoint.cache || !request.cache)
                 return false;
-            return !!(endpoint && match(endpoint.previousRequest, request));
+            return !!match(endpoint.previousRequest, request);
         }
 
         function baseUrl(url){
@@ -272,10 +272,9 @@
                     request.cache = isBoolean(request.cache) ? request.cache : true;
 
                     endpoint = getEndpoint(this.endpoints, request);
-
                     useCache = useCachedResponse(endpoint, request, settings.match);
 
-                    if (endpoint && endpoint.cache && useCache) {
+                    if (useCache) {
                         endpoint.previousRequest = request;
                         deferred = endpoint.cache;
                         if (typeof request.success === 'function')
@@ -284,12 +283,17 @@
                             deferred.fail(request.error);
                     } else {
                         deferred = settings.proxyTo(request);
-                        setEndpoint(this.endpoints, {
-                            type: request.type,
-                            url: new RegExp(baseUrl(request.url)),
-                            cache: deferred,
-                            previousRequest: request
-                        });
+                        if(endpoint){
+                            endpoint.cache = deferred;
+                            endpoint.previousRequest = request;
+                        }else{
+                            setEndpoint(this.endpoints, {
+                                type: request.type,
+                                url: new RegExp(baseUrl(request.url)),
+                                cache: deferred,
+                                previousRequest: request
+                            });
+                        }
                     }
                 } else {
                     deferred = request;
