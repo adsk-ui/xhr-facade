@@ -65,32 +65,22 @@ facade.ajax({url: '/peas'}, {
     // jqXHR.status === 200
 });
 ```
-### .create( options )
+### .create( type, url, response )
 Configures virtual Ajax endpoints.
-
-**.create( options )**
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| **options** | Object, Array | The configuration settings for the virtual endpoint. Pass an array of objects to configure multiple endpoints at once. |
-
-Options for configuration settings:
-
-| Name | Type | Required | Description |
-| ---- | ---- | -------- | ----------- |
-| url | String, RegExp | Yes | The URL for the endpoint. |
-| response | Function | Yes | The response function is invoked for each request made to the endpoint. An object representing the request is passed to the function as an argument. To respond to the request, you must call the request object's "respond" method, passing it the stringified payload. |
-| type | String | No | The request method. Defaults to "GET" |
+| **type** | String | The HTTP method for the virtual endpoint. |
+| **url** | String or RegExp | The URL for the virtual endpoint. In addition to RegExp, URL patterns can be matched with a string value containing placeholders. See example below. |
+| **response** | Function | The function that will respond to requests to the endpoint. The function will be passed ```req``` and ```res``` arguments. |
 
 ```javascript
-facade.create({
-    url: '/peas',
-    response: function(request){
-        request.respond(JSON.stringify({
+facade.create('GET', '/peas', function(req, res){
+        res.json({
             latin: 'Pisum sativum',
             type: 'fruit',
             color: 'green'
-        }));
+        });
     }
 });
 $.ajax({
@@ -100,16 +90,39 @@ $.ajax({
     }
 });
 ```
-The URL can also be defined as a regular expression. Any capture groups will be passed into the response function.
+The ```req``` object contains info about the request and also inherits the facade's ```.ajax()``` method. The ```res``` object is used to respond to the request with a payload.
+
+** req **
+
+| Property | Type | Description |
+| ---- | ---- | ----------- |
+| params | Object or Array | Contains URL fragments from the request. If the endpoint URL is defined as as a RegExp, it will be an array containing values from the capture groups. If the endpoint URL is defined as a String with placeholders, it will be an object where the placeholders act as keys. |
+| query | Object | Contains key/value pairs representing URL parameters from the request. |
+| ajax | Function | Same as ```facade.ajax``` above. |
+
 ```javascript
-facade.create({
-    url: /\/food\/(\w+)/,
-    response: function(request, food){
-        // food === "peas"
-    }
+facade.create('GET', /\/food\/(\w+)/, function(req, res){
+        // req.params[0] === "peas"
+        // req.query.dinner === "true"
 });
-$.ajax({ url: '/food/peas' });
+$.ajax({ url: '/food/peas?dinner=true' });
 ```
+The URL can be defined as a string with placeholders. In this case ```req.params``` will be a has with the placeholders acting as keys.
+```javascript
+facade.create('GET', '/food/:kind', function(req, res){
+        // req.params.kind === "peas"
+        // req.query.dinner === "true"
+});
+$.ajax({ url: '/food/peas?dinner=true' });
+```
+** res **
+
+| Property | Type | Description |
+| ---- | ---- | ----------- |
+| params | Object or Array | Contains URL fragments from the request. If the endpoint URL is defined as as a RegExp, it will be an array containing values from the capture groups. If the endpoint URL is defined as a String with placeholders, it will be an object where the placeholders act as keys. |
+| query | Object | Contains key/value pairs representing URL parameters from the request. |
+| ajax | Function | Same as ```facade.ajax``` above. |
+
 ### .destroy()
 Restores the global XMLHttpRequest object.
 
