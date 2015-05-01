@@ -84,6 +84,16 @@
             return endpoint;
         }
 
+        function removeEndpoint(endpoints, endpoint){
+            var i = 0,
+                l = endpoints.length;
+            for( ; i < l; i++){
+                if( endpoints[i] === endpoint ){
+                    return endpoints.splice(i, 1);
+                }
+            }
+        }
+
         function useCachedResponse(endpoint, request, match){
             if(!endpoint || !endpoint.cache || !request.cache)
                 return false;
@@ -93,6 +103,7 @@
         function baseUrl(url){
             return url.replace(/\?.*/, '');
         }
+
 
         /**
          * XhrFacade constructor function. Creates a sinon fake server
@@ -141,9 +152,6 @@
             this.server = server;
         }
 
-        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
-        XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
-
         /**
          * Creates a new vitual XHR endpoint.
          * @param  {String} method   The HTTP method for this endpoint; defaults to GET if omitted
@@ -151,7 +159,7 @@
          * @param  {Function} response The handler that will be invoked when this endpoint is requested.
          * @return {[type]}          [description]
          */
-        XhrFacade.prototype.create = function(method, url, response) {
+        XhrFacade.prototype.add = function(method, url, response) {
             var self = this,
                 urlParamKeys;
 
@@ -204,6 +212,9 @@
                         request.respond(200, {
                             'Content-Type': 'application/json'
                         }, JSON.stringify(payload));
+                    },
+                    sendStatus: function(statusCode){
+                        request.respond(statusCode);
                     }
                 });
             });
@@ -213,6 +224,10 @@
                     url: url,
                     response: response
                 });
+        };
+
+        XhrFacade.prototype.remove = function(endpoint){
+            return removeEndpoint(this.endpoints, endpoint);
         };
 
         /**
@@ -329,6 +344,10 @@
             return singleton;
         };
 
+
+        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
+        XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
+        XhrFacade.StatusCodes = {};
         return XhrFacade;
     }
     if (typeof define === 'function' && define.amd) {
