@@ -71,7 +71,7 @@ facade.ajax({url: '/peas'}, {
     // jqXHR.status === 200
 });
 ```
-### facade.create( type, url, response )
+### facade.add( type, url, response )
 Configures virtual Ajax endpoints.
 
 | Name | Type | Description |
@@ -81,7 +81,7 @@ Configures virtual Ajax endpoints.
 | **response** | Function | The function that will respond to requests to the endpoint. The function will be passed ```req``` and ```res``` arguments. The ```req``` object contains info about the request and also inherits the facade's ```.ajax()``` method. The ```res``` object is used to respond to the request with a payload. |
 
 ```javascript
-facade.create('GET', '/peas', function response(req, res){
+facade.add('GET', '/peas', function response(req, res){
         res.json({
             latin: 'Pisum sativum',
             type: 'fruit',
@@ -107,7 +107,7 @@ facade.create(type, url, function( **req**, res ){ ...
 | ajax | Function | Same as ```facade.ajax``` above. |
 
 ```javascript
-facade.create('GET', /\/food\/(\w+)/, function response(req, res){
+facade.add('GET', /\/food\/(\w+)/, function response(req, res){
         // req.params[0] === "peas"
         // req.query.dinner === "true"
 });
@@ -115,20 +115,36 @@ $.ajax({ url: '/food/peas?dinner=true' });
 ```
 The URL can be defined as a string with placeholders. In this case ```req.params``` will be an object with the placeholders acting as keys.
 ```javascript
-facade.create('GET', '/food/:kind', function response(req, res){
+facade.add('GET', '/food/:kind', function response(req, res){
         // req.params.kind === "peas"
         // req.query.dinner === "true"
 });
 $.ajax({ url: '/food/peas?dinner=true' });
 ```
 #### res
-facade.create(type, url, function( req, **res** ){ ...
+facade.add(type, url, function( req, **res** ){ ...
 
 | Property | Type | Description |
 | ---- | ---- | ----------- |
-| params | Object or Array | Contains URL fragments from the request. If the endpoint URL is defined as as a RegExp, it will be an array containing values from the capture groups. If the endpoint URL is defined as a String with placeholders, it will be an object where the placeholders act as keys. |
 | send | Function | Responds to the XHR request with header Content-Type: 'plain/text'. Expects a String value argument that will be sent as the response payload. |
 | json | Function | Responds to the XHR request with header Content-Type: 'application/json'. Expects an Object value argument that will be JSON stringified before being sent. |
+| sendStatus | Function | Responds to request with a status code and corresponding string value as response body. |
+
+```
+facade.add('GET', '/food/:kind', function(req, res){
+  if( req.params.kind === 'apple' )
+    res.sendStatus(403);
+});
+$.get('/food/apple').fail(function(jqXhr, textStatus, error){
+  // error === 'Forbidden'
+});
+```
+### facade.remove()
+Removes previously added virtual endpoints. Subsequent calls to the endpoint will not be intercepted by the facade and will instead pass through to the server.
+```
+var endpoint = facade.add('GET', '/food/:kind', function(req, res){});
+facade.remove(endpoint);
+```
 
 ### facade.destroy()
 Removes any created endpoints and restores the global XMLHttpRequest object.
