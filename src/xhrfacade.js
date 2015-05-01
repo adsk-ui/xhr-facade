@@ -104,6 +104,7 @@
             return url.replace(/\?.*/, '');
         }
 
+
         /**
          * XhrFacade constructor function. Creates a sinon fake server
          * which overrides the browser's native global XMLHttpRequest object so
@@ -150,9 +151,6 @@
             server.xhr.addFilter(filter);
             this.server = server;
         }
-
-        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
-        XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
 
         /**
          * Creates a new vitual XHR endpoint.
@@ -214,6 +212,9 @@
                         request.respond(200, {
                             'Content-Type': 'application/json'
                         }, JSON.stringify(payload));
+                    },
+                    sendStatus: function(statusCode){
+                        request.respond(statusCode);
                     }
                 });
             });
@@ -343,6 +344,10 @@
             return singleton;
         };
 
+
+        XhrFacade.RESPONSE_REQUIRED = 'You must provide a response function when creating an endpoint.';
+        XhrFacade.ENDPOINT_URL_REQUIRED = 'You must provide a URL when creating an endpoint.';
+        XhrFacade.StatusCodes = {};
         return XhrFacade;
     }
     if (typeof define === 'function' && define.amd) {

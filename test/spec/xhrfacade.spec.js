@@ -501,6 +501,18 @@
                             });
                         });
                     });
+                    describe('.sendStatus()', function(){
+                        it('sends HTTP status code and corresponding string representation as the response body', function(done){
+                            facade.add('/abc', function(req, res){
+                                res.sendStatus(400);
+                            });
+                            $.get('/abc').fail(function(jqXHR, textStatus, err){
+                                expect(textStatus).to.equal('error');
+                                expect(err).to.equal('Bad Request');
+                                done();
+                            });
+                        });
+                    });
                 });
             });
 
