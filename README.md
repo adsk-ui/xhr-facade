@@ -139,7 +139,7 @@ $.get('/food/apple').fail(function(jqXhr, textStatus, error){
   // error === 'Forbidden'
 });
 ```
-### facade.remove()
+### facade.remove(endpoint)
 Removes previously added virtual endpoints. Subsequent calls to the endpoint will not be intercepted by the facade and will instead pass through to the server.
 ```
 var endpoint = facade.add('GET', '/food/:kind', function(req, res){});
