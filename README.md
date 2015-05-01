@@ -45,13 +45,15 @@ facade.ajax([{ url: '/peas' }, { url: '/carrots' }, 'hello!'] )
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| **options** | Object | Configuration options for call. See below. |
+| **options** | Object | Configuration options for call. |
 
-Ajax configuration settings:
+Configuration options:
 
 | Name | Type | Required | Description |
 | ---- | ---- | -------- | ----------- |
-| aggregator | Function | No | A custom function for handling the jqXHR object(s) for the request(s). |
+| aggregator | Function | No | A custom function for handling the jqXHR object(s) for the request(s). Defaults to RSVP.allSettled |
+| proxyTo | Function | No | The function to use for making calls. Defaults to jQuery.ajax |
+| match | Function | No | When making an Ajax request with facade.ajax(), this comparator function will be used to determine whether to respond to the request with a previously cached payload. The function takes the previous and current requests to the endpoint as arguments. Defaults to the static function ```XhrFacade.match``` |
 
 
 ```javascript
@@ -92,7 +94,7 @@ $.ajax({
 ```
 The ```req``` object contains info about the request and also inherits the facade's ```.ajax()``` method. The ```res``` object is used to respond to the request with a payload.
 
-** req **
+**req**
 
 | Property | Type | Description |
 | ---- | ---- | ----------- |
@@ -115,7 +117,7 @@ facade.create('GET', '/food/:kind', function(req, res){
 });
 $.ajax({ url: '/food/peas?dinner=true' });
 ```
-** res **
+**res**
 
 | Property | Type | Description |
 | ---- | ---- | ----------- |
