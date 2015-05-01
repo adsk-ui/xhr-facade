@@ -51,11 +51,7 @@ facade.ajax([{ url: '/peas' }, { url: '/carrots' }, 'hello!'] )
 
 facade.ajax( request, **options** )
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| **options** | Object | Configuration options for call. |
-
-Configuration options:
+An object containing configuration options for the request
 
 | Name | Type | Required | Description |
 | ---- | ---- | -------- | ----------- |
