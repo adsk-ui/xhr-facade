@@ -11,18 +11,18 @@
         beforeEach(function() {
             sinon.spy(jQuery, 'ajax');
             facade = new XhrFacade();
-            facade.create('/bonjour', function(req, res){
+            facade.add('/bonjour', function(req, res){
                 res.json({
                     message: 'bonjour!'
                 });
             });
-            facade.create(/\/custom\/([^\?]+)/, function(req, res){
+            facade.add(/\/custom\/([^\?]+)/, function(req, res){
                 res.json({
                     message: req.params[0],
                     param: req.query.param
                 });
             });
-            facade.create(/\/error/, [404, null, '']);
+            facade.add(/\/error/, [404, null, '']);
             requestA = {
                 url: 'abc',
                 data: {
@@ -332,16 +332,16 @@
             });
         });
 
-        describe('.create()', function() {
+        describe('.add()', function() {
 
             it('should be a function', function() {
-                expect(facade.create).to.be.a('function');
+                expect(facade.add).to.be.a('function');
             });
 
             it('should throw error if url is not provided for endpoint', function(){
                 var err = {};
                 try{
-                    facade.create();
+                    facade.add();
                 }catch(e){
                     err = e;
                 }finally{
@@ -360,12 +360,12 @@
             });
 
             it('should register seperate default options for each endpoint HTTP method', function(done){
-                facade.create('GET', '/method-man', function(req, res){
+                facade.add('GET', '/method-man', function(req, res){
                     res.json({
                         message: 'you got it'
                     });
                 });
-                facade.create('POST', '/method-man', function(req, res){
+                facade.add('POST', '/method-man', function(req, res){
                     res.json({
                         message: 'poster boy'
                     });
@@ -400,7 +400,7 @@
                 describe('request.params', function(){
                     describe('when route definition is a regular expression', function(){
                         it('is an array containing capture groups', function(done){
-                            facade.create('GET', /a\/(.*)\/(.*)\/?(.*)/, function(req){
+                            facade.add('GET', /a\/(.*)\/(.*)\/?(.*)/, function(req){
                                 expect(req.params.length).to.equal(3);
                                 expect(req.params[0]).to.equal('b');
                                 expect(req.params[1]).to.equal('c');
@@ -412,7 +412,7 @@
                     });
                     describe('when route definition is a path pattern', function(){
                         it('is an object containing properties mapped the named route "parameters"', function(done){
-                            facade.create('GET', '/1/:b/:c', function(req){
+                            facade.add('GET', '/1/:b/:c', function(req){
                                 expect(req.params.b).to.equal('2');
                                 expect(req.params.c).to.equal('3');
                                 done();
@@ -423,7 +423,7 @@
                 });
                 describe('request.query', function(){
                     it('is an key/value representation of the query parameters in the request', function(done){
-                        facade.create('/a/b', function(req, res){
+                        facade.add('/a/b', function(req, res){
                             expect(req.query.r).to.equal('s');
                             expect(req.query.t).to.equal('u');
                             done();
@@ -433,7 +433,7 @@
                 });
                 describe('request.cache', function(){
                     it("is true when cache setting of ajax request is true", function(done){
-                        facade.create('/a/b', function(req, res){
+                        facade.add('/a/b', function(req, res){
                             expect(req.cache).to.be.true;
                             done();
                         });
@@ -442,7 +442,7 @@
                         });
                     });
                     it("is false when cache setting of ajax request is false", function(done){
-                        facade.create('/a/b', function(req, res){
+                        facade.add('/a/b', function(req, res){
                             expect(req.cache).to.be.false;
                             done();
                         });
@@ -455,7 +455,7 @@
                 describe('request.ajax()', function(){
                     it("acts as a proxy to facade.ajax()", function(done){
                         sinon.spy(facade, 'ajax');
-                        facade.create('/a/b', function(req, res){
+                        facade.add('/a/b', function(req, res){
                             req.ajax('hello');
                             expect(facade.ajax.calledOnce).to.be.true;
                             expect(facade.ajax.calledWith('hello')).to.be.true;
@@ -467,14 +467,14 @@
                 describe('response', function(){
                     describe('.send()', function(){
                         it('is a function', function(done){
-                            facade.create('/abc', function(req, res){
+                            facade.add('/abc', function(req, res){
                                 expect(res.send).to.be.a('function');
                                 done();
                             });
                             $.get('/abc');
                         });
                         it('sends raw text input as response to request', function(done){
-                            facade.create('/abc', function(req, res){
+                            facade.add('/abc', function(req, res){
                                 res.send('hi!');
                             });
                             $.get('/abc').done(function(response){
@@ -485,14 +485,14 @@
                     });
                     describe('.json()', function(){
                         it('is a function', function(done){
-                            facade.create('/abc', function(req, res){
+                            facade.add('/abc', function(req, res){
                                 expect(res.json).to.be.a('function');
                                 done();
                             });
                             $.get('/abc');
                         });
                         it('stringifies json input before sending it as response to request', function(done){
-                            facade.create('/abc', function(req, res){
+                            facade.add('/abc', function(req, res){
                                 res.json({msg:'hi!'});
                             });
                             $.get('/abc').done(function(response){
@@ -504,7 +504,21 @@
                 });
             });
 
-
+        });
+        describe('.remove()', function(){
+            it('removes previously added virtual endpoints', function(done){
+                var endpoint = facade.add('/xyz', function(req, res){
+                    res.json({status: 'ok'});
+                });
+                $.get('/xyz').done(function(data){
+                    expect(data.status).to.equal('ok');
+                    facade.remove(endpoint);
+                    $.get('/xyz').fail(function(jqXHR, textStatus){
+                        expect(textStatus).to.equal('error');
+                        done();
+                    });
+                });
+            });
         });
         describe('.destroy()', function(){
             it('should be a function', function(){

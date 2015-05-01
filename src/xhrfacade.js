@@ -84,6 +84,16 @@
             return endpoint;
         }
 
+        function removeEndpoint(endpoints, endpoint){
+            var i = 0,
+                l = endpoints.length;
+            for( ; i < l; i++){
+                if( endpoints[i] === endpoint ){
+                    return endpoints.splice(i, 1);
+                }
+            }
+        }
+
         function useCachedResponse(endpoint, request, match){
             if(!endpoint || !endpoint.cache || !request.cache)
                 return false;
@@ -151,7 +161,7 @@
          * @param  {Function} response The handler that will be invoked when this endpoint is requested.
          * @return {[type]}          [description]
          */
-        XhrFacade.prototype.create = function(method, url, response) {
+        XhrFacade.prototype.add = function(method, url, response) {
             var self = this,
                 urlParamKeys;
 
@@ -213,6 +223,10 @@
                     url: url,
                     response: response
                 });
+        };
+
+        XhrFacade.prototype.remove = function(endpoint){
+            return removeEndpoint(this.endpoints, endpoint);
         };
 
         /**
