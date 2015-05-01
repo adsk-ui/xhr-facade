@@ -2,15 +2,23 @@
 Frontend utility for abstracting server-side endpoints.
 
 ## Documentation
+### Constructor
+```
+var facade = new XhrFacade();
+```
+A singleton instance can also be accessed using a static method:
+```
+var facade = XhrFacade.getInstance();
+```
 
-### .ajax( request[, options] )
+### facade.ajax( request[, options] )
 Performs async HTTP request(s). This method works similarly to [jQuery.ajax](http://api.jquery.com/jquery.ajax/) with a few key differences:
 
 1. The request parameter can be an array of objects for making multiple calls in parallel.
 2. By default, returns an [RSVP.Promise](https://github.com/tildeio/rsvp.js/) object that resolves after all requests have resolved. The array passed to the resolve callback will contain the responses in the same order that they were requested
 2. Cached responses provided for multiple requests to a URL when "type" (GET, POST, etc) and "data" (the request payload) are the same
 
-**.ajax( request )**
+facade.ajax( **request** )
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -41,7 +49,7 @@ facade.ajax([{ url: '/peas' }, { url: '/carrots' }, 'hello!'] )
   });
 ```
 
-**.ajax( request, options )**
+facade.ajax( request, **options** )
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -67,7 +75,7 @@ facade.ajax({url: '/peas'}, {
     // jqXHR.status === 200
 });
 ```
-### .create( type, url, response )
+### facade.create( type, url, response )
 Configures virtual Ajax endpoints.
 
 | Name | Type | Description |
@@ -94,7 +102,7 @@ $.ajax({
 ```
 
 #### req
-function response( **req**, res )
+facade.create(type, url, function( **req**, res ){ ...
 
 | Property | Type | Description |
 | ---- | ---- | ----------- |
@@ -118,7 +126,7 @@ facade.create('GET', '/food/:kind', function response(req, res){
 $.ajax({ url: '/food/peas?dinner=true' });
 ```
 #### res
-function response( req, **res** )
+facade.create(type, url, function( req, **res** ){ ...
 
 | Property | Type | Description |
 | ---- | ---- | ----------- |
@@ -126,8 +134,6 @@ function response( req, **res** )
 | send | Function | Responds to the XHR request with header Content-Type: 'plain/text'. Expects a String value argument that will be sent as the response payload. |
 | json | Function | Responds to the XHR request with header Content-Type: 'application/json'. Expects an Object value argument that will be JSON stringified before being sent. |
 
-### .destroy()
-Restores the global XMLHttpRequest object.
+### facade.destroy()
+Removes any created endpoints and restores the global XMLHttpRequest object.
 
-### XhrFacade.getInstance()
-A static method that returns a singleton instance.
