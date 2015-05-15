@@ -4,7 +4,7 @@
   "description": "Frontend utility for abstracting server-side endpoints",
   "main": "n/a",
   "scripts": {
-    "test": "n/a"
+      "postinstall": "bower install & (cd test ; bower install)"
   },
   "author": "",
   "license": "ISC",
