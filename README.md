@@ -74,7 +74,7 @@ facade.add('GET', '/food/:kind', function response(req, res){
       res.json({
         food: req.params.kind,
         nutrition: nutrition,
-        recipies: recipes
+        recipes: recipes
       });
     });
 });
