@@ -1,5 +1,7 @@
 # XhrFacade
-Frontend utility for abstracting server-side endpoints. XhrFacade makes it possible to create "virtual" endpoints on the client by intercepting XMLHTTPRequests and providing a promise-based API for proxying to one or more server-side endpoints before returning a customized payload to the original request. Useful for single-page apps that mashup data from disparate sources in order to display a unified resource, or to create a clean, custom REST API on the client.
+Frontend utility for abstracting server-side endpoints. XhrFacade can be used to create "virtual" endpoints on the client by intercepting XMLHTTPRequests and providing a promise-based API for proxying to one or more server-side endpoints before returning a customized payload to the original request. Useful for single-page apps that mashup data from disparate sources in order to display a unified resource, or to create a custom REST API tailored for the application on the client.
+
+![diagram](https://raw.githubusercontent.com/adsk-ui/xhr-facade/master/docs/img/xhrfacade.png)
 
 ## Documentation
 ### Constructor
