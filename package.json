@@ -4,7 +4,7 @@
   "description": "Frontend utility for abstracting server-side endpoints",
   "main": "n/a",
   "scripts": {
-      "postinstall": "bower install & (cd test ; bower install)"
+    "postinstall": "bower install & (cd test ; bower install)"
   },
   "author": "",
   "license": "ISC",
@@ -13,6 +13,7 @@
     "chai": "^2.2.0",
     "gulp": "^3.8.10",
     "gulp-connect": "^2.2.0",
+    "gulp-open": "^0.3.2",
     "gulp-rename": "^1.2.0",
     "sinon": "^1.14.1",
     "sinon-chai": "^2.7.0",

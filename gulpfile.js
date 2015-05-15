@@ -3,7 +3,8 @@ var gulp = require('gulp'),
 	rename = require('gulp-rename'),
 	slash = require('slash'),
 	wiredep = require('wiredep'),
-	connect = require('gulp-connect');
+	connect = require('gulp-connect'),
+	open = require('gulp-open');
 
 gulp.task('test', function(){
 	return gulp.src('test/index.template.html')
@@ -28,7 +29,13 @@ gulp.task('connect', function(){
 		livereload: true
 	});
 });
+gulp.task('launch', ['connect'], function(){
+	return gulp.src('test/index.html')
+		.pipe(open('', {
+			url: 'http://localhost:8080/test'
+		}))
+});
 gulp.task('watch', function(){
 	gulp.watch(['src/*.js', 'test/spec/*.js'], ['test']);
 });
-gulp.task('default', ['connect', 'watch']);
+gulp.task('default', ['launch', 'watch']);
