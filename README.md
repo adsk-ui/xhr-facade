@@ -149,3 +149,8 @@ facade.remove(endpoint);
 ### facade.destroy()
 Removes any created endpoints and restores the global XMLHttpRequest object.
 
+## Running Unit Tests
+After cloning the repo, run these commands from the project root:
+
+1. npm install
+2. gulp
