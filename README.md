@@ -40,7 +40,7 @@ $.ajax({
 ```
 
 #### req
-facade.create(type, url, function( **req**, res ){ ...
+facade.add(type, url, function( **req**, res ){ ...
 
 | Property | Type | Description |
 | ---- | ---- | ----------- |
