@@ -5,6 +5,7 @@
 
         RSVP.Promise.prototype.spread = function(resolve, reject, label) {
             return this.then(function(array) {
+                array = array instanceof Array ? array : [];
                 return resolve.apply(void 0, array);
             }, reject, label);
         };
