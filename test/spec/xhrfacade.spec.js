@@ -452,6 +452,21 @@
                         });
                     });
                 });
+                describe('request.body', function(){
+                    it("contains POST request body", function(done){
+                        facade.add('POST', '/a/b', function(req, res){
+                            expect(req.body.msg).to.equal('hi');
+                            done();
+                        });
+                        $.ajax({
+                            url: '/a/b',
+                            type: 'POST',
+                            data: JSON.stringify({
+                                msg: 'hi'
+                            })
+                        });
+                    });
+                });
                 describe('request.ajax()', function(){
                     it("acts as a proxy to facade.ajax()", function(done){
                         sinon.spy(facade, 'ajax');

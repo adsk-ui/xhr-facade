@@ -199,6 +199,7 @@
                 }
 
                 return response({
+                    body: JSON.parse(request.requestBody),
                     params: params || {},
                     query: query,
                     cache: !query._,
