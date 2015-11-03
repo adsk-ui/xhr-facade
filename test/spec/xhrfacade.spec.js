@@ -547,6 +547,49 @@
                 });
             });
         });
+        describe('.clearCache()', function(){
+            var greet, greeting, saludo;
+            beforeEach(function(){
+                greeting = 'hello!';
+                saludo = 'hola!';
+                greet = facade.add('/greet', function(req, res){
+                    res.json({
+                        message: greeting
+                    });
+                });
+                facade.add('/saludar', function(req, res){
+                    res.json({
+                        message: saludo
+                    });
+                });
+            });
+            it('deletes cache for all endpoints', function(done){
+                facade.ajax({url:'/greet'}).spread(function(data){
+                    expect(data.value.message).to.equal('hello!');
+                    greeting = 'hi!';
+                    facade.clearCache();
+                   return facade.ajax({url:'/greet'});
+                }).spread(function(data){
+                    expect(data.value.message).to.equal('hi!');
+                    done();
+                });
+            });
+            it('deletes cache for specified endpoint(s)', function(done){
+                facade.ajax([{url: '/greet'}, {url: '/saludar'}])
+                    .spread(function(english, spanish){
+                        expect(english.value.message).to.equal('hello!');
+                        expect(spanish.value.message).to.equal('hola!');
+                        greeting = 'hi!';
+                        saludo = 'que tal';
+                        facade.clearCache([greet]);
+                        return facade.ajax([{url:'/greet'}, {url: '/saludar'}]);
+                    }).spread(function(english, spanish){
+                        expect(english.value.message).to.equal('hi!');
+                        expect(spanish.value.message).to.equal('hola!');
+                        done();
+                    });
+            });
+        });
         describe('.destroy()', function(){
             it('should be a function', function(){
                 expect(facade.destroy).to.be.a('function');
