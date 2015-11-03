@@ -335,6 +335,14 @@
                 singleton = null;
         };
 
+        XhrFacade.prototype.clearCache = function(endpoints){
+            endpoints = endpoints ? isArray(endpoints) ? endpoints : [endpoints] : this.endpoints;
+            var i = 0,
+                l = endpoints.length;
+            for( ; i < l; i++){
+                delete endpoints[i].cache;
+            }
+        };
         /**
          * Static method used to retreive a singleton instance of XhrFacade
          * @return {XhrFacade} The singleton instance.
