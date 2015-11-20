@@ -180,7 +180,7 @@
 
             if(isString(url)){
                 urlParamKeys = url.match(/:\w+/g);
-                url = url.replace(/:\w+/g, '(\\w+)').replace(/\)/g, ')?');
+                url = url.replace(/:\w+/g, '([\\w|-]+)').replace(/\)/g, ')?');
             }
 
             url = new RegExp(url);

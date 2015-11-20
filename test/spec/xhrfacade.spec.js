@@ -419,6 +419,13 @@
                             });
                             $.ajax({url: '/1/2/3'});
                         });
+                        it('allows dynamic path values to contain hyphens', function(done){
+                            facade.add('GET', '/1/:b', function(req){
+                                expect(req.params.b).to.equal('1-2');
+                                done();
+                            });
+                            $.ajax({url:'/1/1-2'});
+                        });
                     });
                 });
                 describe('request.query', function(){
