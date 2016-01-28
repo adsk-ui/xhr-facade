@@ -205,9 +205,11 @@
                     cache: !query._,
                     ajax: bind(self.ajax, self)
                 }, {
-                    send: function(payload) {
-                        request.respond(200, {
-                            'Content-Type': 'text/plain',
+                    send: function(statusCode, payload) {
+                        payload = arguments.length === 2 ? payload : statusCode;
+                        statusCode = arguments.length === 2 ? (statusCode || 200) : 200;
+                        request.respond(statusCode, {
+                            'Content-Type': 'text/plain'
                         }, payload);
                     },
                     json: function(payload) {
