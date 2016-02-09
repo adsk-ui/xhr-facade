@@ -46,6 +46,8 @@ facade.add(type, url, function( **req**, res ){ ...
 | ---- | ---- | ----------- |
 | params | Object or Array | Contains URL fragments from the request. If the endpoint URL is defined as as a RegExp, it will be an array containing values from the capture groups. If the endpoint URL is defined as a String with placeholders, it will be an object where the placeholders act as keys. |
 | query | Object | Contains key/value pairs representing URL parameters from the request. |
+| body | Object | Contains key/value pairs representing the body of the request. |
+| cache | Boolean | Flag indicating the value of the jQuery.ajax cache option used for the request. |
 | ajax | Function | This is inherited from the facade instance (see documentation on ```facade.ajax``` below) and can be used to proxy the original request to server-side endpoints or even other defined "virtual" endpoints. |
 
 ```javascript
