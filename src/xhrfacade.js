@@ -47,6 +47,10 @@
             return typeof obj === 'boolean';
         }
 
+        function isNumber(obj){
+            return typeof obj === 'number';
+        }
+
         function extend(obj) {
             var sources = slice.call(arguments, 1),
                 sourcesLength = sources.length,
@@ -205,9 +209,10 @@
                     cache: !query._,
                     ajax: bind(self.ajax, self)
                 }, {
-                    send: function(payload) {
-                        request.respond(200, {
-                            'Content-Type': 'text/plain',
+                    send: function(payload, statusCode) {
+                        statusCode = statusCode || 200;
+                        request.respond(statusCode, {
+                            'Content-Type': 'text/plain'
                         }, payload);
                     },
                     json: function(payload) {

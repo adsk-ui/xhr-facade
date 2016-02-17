@@ -504,6 +504,15 @@
                                 done();
                             });
                         });
+                        it('accepts HTTP status code and text input as response body', function(done){
+                            facade.add('/abc', function(req, res){
+                                res.send('Something when wrong', 500);
+                            });
+                            $.get('/abc').fail(function(jqXHR, textStatus, err){
+                                expect(jqXHR.responseText).to.equal('Something when wrong');
+                                done();
+                            });
+                        });
                     });
                     describe('.json()', function(){
                         it('is a function', function(done){
