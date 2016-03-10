@@ -235,6 +235,25 @@
                     });
             });
 
+            it('supports option for retrieving cached response regardless of request payload', function(done){
+
+                facade.ajax({
+                        url: '/custom/x'
+                    })
+                    .spread(function(first) {
+                        expect(first.value.message).to.equal('x');
+                        return facade.ajax({
+                            url: '/custom/y',
+                            forceCache: true
+                        });
+                    })
+                    .spread(function(second){
+                        expect(second.value.message).to.equal('x');
+                        expect(jQuery.ajax.calledOnce).to.be.true;
+                        done();
+                    });
+            });
+
             it('passes extra parameters into resolve/reject callbacks', function(done){
                 facade.ajax([{'url': '/bonjour' }, 'extra', null, undefined])
                     .spread(function(french, extra, n, u){

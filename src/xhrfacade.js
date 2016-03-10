@@ -100,6 +100,8 @@
         }
 
         function useCachedResponse(endpoint, request, match){
+            if(endpoint && endpoint.cache && request.forceCache)
+                return true;
             if(!endpoint || !endpoint.cache || !request.cache)
                 return false;
             return !!match(endpoint.previousRequest, request);
@@ -292,6 +294,9 @@
                 if (request && request.url) {
                     request.type = request.type || 'GET';
                     request.cache = isBoolean(request.cache) ? request.cache : true;
+
+                    // Force returning the endpoint's cache regardless of the request payload
+                    request.forceCache = isBoolean(request.forceCache) ? request.forceCache : false;
 
                     endpoint = getEndpoint(this.endpoints, request);
                     useCache = useCachedResponse(endpoint, request, settings.match);
