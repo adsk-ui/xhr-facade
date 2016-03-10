@@ -115,9 +115,11 @@ Performs async HTTP request(s). This method works similarly to [jQuery.ajax](htt
 
 facade.ajax( **request** )
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| **request** | Object, Array | A settings object for the request. Pass an array with multiple settings objects to perform multiple requests. The settings objects are passed to jQuery.ajax and therefore can contain any of [the properties supported by jQuery.ajax](http://api.jquery.com/jquery.ajax/#jQuery-ajax-settings). |
+An options object for the request. It can be an object or an array; pass an array with multiple options objects to perform multiple requests. The options objects are passed to jQuery.ajax and therefore can contain any of [the options supported by jQuery.ajax](http://api.jquery.com/jquery.ajax/#jQuery-ajax-settings). In addition to the standard jQuery options, XhrFacade adds additional options in the table below.
+
+| Name | Type | Default | Description |
+| ---- | ---- | --------| ----------- |
+| forceCache | Boolean | false | When true, causes facade to return previously cached response for the requested endpoint (if one exists) regardless of the request payload. The difference between this and the ```cache``` option supported by jQuery, is that the jQuery option will only return a cached response if the request payload matches the previous one.  |
 
 ```javascript
 var facade = new XhrFacade();
